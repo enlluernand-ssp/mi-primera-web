@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <title>Enlluernand — Configurador & Catálogo</title>
 
-  <!-- EmailJS para envíos -->
+  <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
-  <!-- Firebase SDK (compatibilidad) -->
+  <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -87,7 +87,7 @@
   <div id="welcomeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999;">
     <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:12px; max-width:400px; text-align:center;">
       <h2>🎉 ¡Bienvenido/a!</h2>
-      <p>Tu código de descuento es:</p>
+      <p id="welcomeMessage">Tu código de descuento es:</p>
       <div id="discountCode" style="font-size:1.5em; font-weight:bold; color:#0077cc; margin:10px 0;"></div>
       <button onclick="copyCode()" style="background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Copiar código</button>
       <button onclick="useCode()" style="margin-top:10px; background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Usar código</button>
@@ -190,7 +190,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Datos de tu Excel (convertidos a JSON)
+    // Datos de tu Excel (JSON)
     const productosExcel = [
       {"Codigo": 1,"Descripcion": "Alfiler cabeza plana ORO *15mm","Unidades": 203,"Precio": "0,9050","Costo": "0,0045","Unidades Restantes": 203},
       {"Codigo": 2,"Descripcion": "Alfiler cabeza plana PLATA *15mm","Unidades": 203,"Precio": "0,9050","Costo": "0,0045","Unidades Restantes": 203},
@@ -333,6 +333,7 @@
     let cart = [];
     let selectedColor = "";
     let userDiscountCode = null;
+    let userDisplayName = null;
 
     // Elementos del DOM
     const summary = document.getElementById("summary");
@@ -355,6 +356,10 @@
     function mostrarBienvenida(nombre) {
       const codeElem = document.getElementById("discountCode");
       codeElem.textContent = userDiscountCode;
+
+      const messageElem = document.getElementById("welcomeMessage");
+      messageElem.textContent = `¡Hola, ${nombre}! Tu código de descuento es:`;
+
       document.getElementById("welcomeModal").style.display = "block";
     }
 
@@ -385,19 +390,36 @@
 
         if (!doc.exists) {
           userDiscountCode = generarCodigoDescuento();
+          userDisplayName = user.displayName || user.email.split("@")[0];
+
           await userRef.set({
             email: user.email,
-            nombre: user.displayName || user.email.split("@")[0],
+            nombre: userDisplayName,
             fechaRegistro: new Date(),
-            codigoDescuento: userDiscountCode
+            codigoDescuento: userDiscountCode,
+            usado: false,
+            expira: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h después
           });
-          mostrarBienvenida(user.displayName || user.email.split("@")[0]);
+
+          mostrarBienvenida(userDisplayName);
         } else {
-          userDiscountCode = doc.data().codigoDescuento;
+          const data = doc.data();
+          userDiscountCode = data.codigoDescuento;
+          userDisplayName = data.nombre;
+
+          // Verificar si expiró
+          if (new Date() > new Date(data.expira)) {
+            userDiscountCode = null;
+          }
+          // O si ya fue usado
+          if (data.usado) {
+            userDiscountCode = null;
+          }
         }
         authButton.textContent = "Cerrar sesión";
       } else {
         userDiscountCode = null;
+        userDisplayName = null;
         authButton.textContent = "Iniciar sesión";
       }
       renderSummary();
@@ -451,11 +473,28 @@
       if (config.extras.includes("urgent")) price += 10;
       price *= config.quantity;
 
+      // Aplicar descuento
       if (config.discount && config.discount === "DESCUENTO10") {
-        price *= 0.9;
+        price *= 0.95; // 5% de descuento
       } else if (config.discount && config.discount === userDiscountCode) {
-        price *= 0.9;
-        alert("✅ ¡Código de bienvenida aplicado! 10% de descuento.");
+        const user = auth.currentUser;
+        if (user) {
+          db.collection("usuarios").doc(user.uid).get().then(doc => {
+            const data = doc.data();
+            if (data.usado) {
+              alert("❌ Este código ya fue usado.");
+              return;
+            }
+            if (new Date() > new Date(data.expira)) {
+              alert("❌ Este código ha expirado.");
+              return;
+            }
+            // Marcar como usado
+            db.collection("usuarios").doc(user.uid).update({ usado: true });
+            alert("✅ ¡Código de bienvenida aplicado! 5% de descuento.");
+          });
+        }
+        price *= 0.95; // 5% de descuento
       }
 
       return Math.round(price * 100) / 100;
@@ -549,5 +588,4 @@
     renderSummary();
   </script>
 </body>
-
 </html>
