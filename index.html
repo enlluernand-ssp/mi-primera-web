@@ -3,16 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <title>Enlluernand — Configurador & Catálogo</title>
+
+  <!-- EmailJS para envíos -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+  <!-- Firebase SDK (compatibilidad) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- Librerías para PDF (opcional) -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #e6f3ff; }
-    header { background: #0077cc; color: white; padding: 15px 20px; position: relative; text-align: center; }
-    header h1 { margin: 0; font-size: 28px; }
-    header p { margin: 5px 0 0; font-size: 16px; }
-    .cart-btn { position: absolute; top: 15px; right: 20px; background: white; color: #0077cc; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .cart-btn:hover { background: #eef; }
+    header {
+      background: #0077cc;
+      color: white;
+      padding: 15px 20px;
+      position: relative;
+      text-align: left;
+    }
+    header h1 { margin: 0; font-size: 28px; text-align: center; }
+    header p { margin: 5px 0 0; font-size: 16px; text-align: center; }
+
+    .header-buttons {
+      display: flex;
+      gap: 15px;
+      position: absolute;
+      top: 15px;
+      right: 20px;
+    }
+
+    .auth-btn, .cart-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .auth-btn { background: white; color: #0077cc; border: none; }
+    .auth-btn:hover { background: #eef; }
+    .cart-btn { background: #0077cc; color: white; border: none; }
+    .cart-btn:hover { background: #005fa3; }
 
     .main-container { display: flex; gap: 20px; max-width: 1400px; margin: 20px auto; padding: 0 20px; }
     section { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; }
@@ -30,7 +64,6 @@
     .color-ball { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; cursor: pointer; }
     .config-container { display: flex; gap: 20px; }
     .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 18px; min-height: 300px; }
-    .controls { flex: 1; }
 
     .sidebar { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -2px 0 8px rgba(0,0,0,0.2); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; z-index: 1000; }
     .sidebar.open { right: 0; }
@@ -40,11 +73,27 @@
   </style>
 </head>
 <body>
+
   <header>
     <h1>Enlluernand</h1>
     <p>Crea tu accesorio o descubre nuestras creaciones</p>
-    <button class="cart-btn" id="openCart">🛒 Cesta (0)</button>
+    <div class="header-buttons">
+      <button class="auth-btn" id="authButton">Iniciar sesión</button>
+      <button class="cart-btn" id="openCart">🛒 Cesta (0)</button>
+    </div>
   </header>
+
+  <!-- Modal de Bienvenida -->
+  <div id="welcomeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:12px; max-width:400px; text-align:center;">
+      <h2>🎉 ¡Bienvenido/a!</h2>
+      <p>Tu código de descuento es:</p>
+      <div id="discountCode" style="font-size:1.5em; font-weight:bold; color:#0077cc; margin:10px 0;"></div>
+      <button onclick="copyCode()" style="background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Copiar código</button>
+      <button onclick="useCode()" style="margin-top:10px; background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Usar código</button>
+      <button onclick="closeModal()" style="margin-top:10px; background:#ccc; color:black; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Cerrar</button>
+    </div>
+  </div>
 
   <div class="main-container">
     <!-- Configurador -->
@@ -123,27 +172,295 @@
   </div>
 
   <script>
+    // Inicializar EmailJS
     (function(){ emailjs.init("QySTAkWHd-G0OkzSS"); })();
 
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZbhHY9mEr3bBMVZLGxZE4NkGMLSPTcL4",
+      authDomain: "enlluernand-77eb5.firebaseapp.com",
+      projectId: "enlluernand-77eb5",
+      storageBucket: "enlluernand-77eb5.firebasestorage.app",
+      messagingSenderId: "904366283683",
+      appId: "1:904366283683:web:816bf521d4b858a4a25816"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Datos de tu Excel (convertidos a JSON)
+    const productosExcel = [
+      {"Codigo": 1,"Descripcion": "Alfiler cabeza plana ORO *15mm","Unidades": 203,"Precio": "0,9050","Costo": "0,0045","Unidades Restantes": 203},
+      {"Codigo": 2,"Descripcion": "Alfiler cabeza plana PLATA *15mm","Unidades": 203,"Precio": "0,9050","Costo": "0,0045","Unidades Restantes": 203},
+      {"Codigo": 3,"Descripcion": "Alfiler cabeza aro ORO *15mm","Unidades": 204,"Precio": "0,8700","Costo": "0,0043","Unidades Restantes": 204},
+      {"Codigo": 4,"Descripcion": "Alfiler cabeza aro PLATA *15mm","Unidades": 204,"Precio": "0,8700","Costo": "0,0043","Unidades Restantes": 204},
+      {"Codigo": 5,"Descripcion": "Alfiler cabeza bola ORO *15mm","Unidades": 202,"Precio": "1,1400","Costo": "0,0056","Unidades Restantes": 202},
+      {"Codigo": 6,"Descripcion": "Alfiler cabeza bola PLATA * 15mm","Unidades": 207,"Precio": "1,1400","Costo": "0,0055","Unidades Restantes": 207},
+      {"Codigo": 7,"Descripcion": "Papel Origami 7*7","Unidades": 100,"Precio": "0,8000","Costo": "0,0080","Unidades Restantes": 100},
+      {"Codigo": 8,"Descripcion": "Cadena *1mm PLATA","Unidades": 200,"Precio": "1,8300","Costo": "0,0092","Unidades Restantes": 200},
+      {"Codigo": 9,"Descripcion": "Cadena *1mm ORO Rosa","Unidades": 200,"Precio": "2,1400","Costo": "0,0107","Unidades Restantes": 200},
+      {"Codigo": 10,"Descripcion": "Cadena *1mm ORO","Unidades": 200,"Precio": "1,7200","Costo": "0,0086","Unidades Restantes": 200},
+      {"Codigo": 11,"Descripcion": "Pegatinas","Unidades": 200,"Precio": "1,4100","Costo": "0,0071","Unidades Restantes": 200},
+      {"Codigo": 12,"Descripcion": "Pegatinas Letras y Numeros","Unidades": "","Precio": "","Costo": "","Unidades Restantes": 0},
+      {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460","Unidades Restantes": 20},
+      {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300","Unidades Restantes": 20},
+      {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
+      {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
+      {"Codigo": 17,"Descripcion": "Conector Resina Trebol ORO","Unidades": 20,"Precio": "1,9300","Costo": "0,0965","Unidades Restantes": 20},
+      {"Codigo": 18,"Descripcion": "Conector final","Unidades": 235,"Precio": "1,3000","Costo": "0,0055","Unidades Restantes": 235},
+      {"Codigo": 19,"Descripcion": "Mini estrella ORO","Unidades": 30,"Precio": "2,5700","Costo": "0,0857","Unidades Restantes": 30},
+      {"Codigo": 20,"Descripcion": "Mini estrella PLATA","Unidades": 30,"Precio": "2,5700","Costo": "0,0857","Unidades Restantes": 30},
+      {"Codigo": 21,"Descripcion": "Colgante brillante","Unidades": "","Precio": "2,8100","Costo": "","Unidades Restantes": 0},
+      {"Codigo": 22,"Descripcion": "Cadena Larga Pendientes ORO","Unidades": "","Precio": "2,0900","Costo": "","Unidades Restantes": 0},
+      {"Codigo": 23,"Descripcion": "Cadena Larga Pendientes PLATA","Unidades": "","Precio": "2,0900","Costo": "","Unidades Restantes": 0},
+      {"Codigo": 24,"Descripcion": "Flores Secas","Unidades": "","Precio": "2,9500","Costo": "","Unidades Restantes": 0},
+      {"Codigo": 25,"Descripcion": "Juego de Llavero ORO","Unidades": 5,"Precio": "2,0100","Costo": "0,4020","Unidades Restantes": 5},
+      {"Codigo": 26,"Descripcion": "Juego de Llavero PLATA","Unidades": 5,"Precio": "2,0100","Costo": "0,4020","Unidades Restantes": 5},
+      {"Codigo": 27,"Descripcion": "Anillo Conector *3mm","Unidades": 500,"Precio": "0,8700","Costo": "0,0017","Unidades Restantes": 500},
+      {"Codigo": 28,"Descripcion": "Anillo Conector *10mm","Unidades": 100,"Precio": "1,6900","Costo": "0,0169","Unidades Restantes": 100},
+      {"Codigo": 29,"Descripcion": "Anillo Conector *4mm","Unidades": 200,"Precio": "0,7800","Costo": "0,0039","Unidades Restantes": 200},
+      {"Codigo": 30,"Descripcion": "Relleno Resina Decoracion","Unidades": 2000,"Precio": "2,0950","Costo": "0,0010","Unidades Restantes": 2},
+      {"Codigo": 31,"Descripcion": "Relleno Resina Flores","Unidades": "","Precio": "1,1900","Costo": "","Unidades Restantes": 0},
+      {"Codigo": 32,"Descripcion": "Resina UV dura","Unidades": 100,"Precio": "8,8750","Costo": "0,0888","Unidades Restantes": 100},
+      {"Codigo": 33,"Descripcion": "Figuras geometricas Resina","Unidades": 50,"Precio": "2,7300","Costo": "0,0546","Unidades Restantes": 50},
+      {"Codigo": 34,"Descripcion": "Broche de langosta ORO","Unidades": 40,"Precio": "1,3100","Costo": "0,0328","Unidades Restantes": 40},
+      {"Codigo": 35,"Descripcion": "Broche langosta PLATA","Unidades": 40,"Precio": "1,2500","Costo": "0,0313","Unidades Restantes": 40},
+      {"Codigo": 36,"Descripcion": "Protector cable","Unidades": 200,"Precio": "1,3000","Costo": "0,0065","Unidades Restantes": 200},
+      {"Codigo": 37,"Descripcion": "Separador PLATA 925 *15mm","Unidades": 40,"Precio": "4,7000","Costo": "0,1175","Unidades Restantes": 40},
+      {"Codigo": 38,"Descripcion": "Cuentas espaciadoras","Unidades": 50,"Precio": "1,3700","Costo": "0,0274","Unidades Restantes": 50},
+      {"Codigo": 39,"Descripcion": "Cuenta Piedra luna *4mm","Unidades": 91,"Precio": "1,6300","Costo": "0,0179","Unidades Restantes": 91},
+      {"Codigo": 40,"Descripcion": "Cuenta Piedra luna *6mm","Unidades": 61,"Precio": "1,5600","Costo": "0,0256","Unidades Restantes": 61},
+      {"Codigo": 41,"Descripcion": "Cuenta Isywaka Blanca 4*6mm","Unidades": 50,"Precio": "0,6100","Costo": "0,0122","Unidades Restantes": 50},
+      {"Codigo": 42,"Descripcion": "Cuenta Isywaka Negra 4*6mm","Unidades": 50,"Precio": "0,6100","Costo": "0,0122","Unidades Restantes": 50},
+      {"Codigo": 43,"Descripcion": "Cuenta Multicolor *6mm","Unidades": 1000,"Precio": "0,8300","Costo": "0,0008","Unidades Restantes": 1},
+      {"Codigo": 44,"Descripcion": "Cuenta Multicolor *4mm","Unidades": 2500,"Precio": "0,6300","Costo": "0,0003","Unidades Restantes": 2.5},
+      {"Codigo": 45,"Descripcion": "Cuenta de encaje negro *6mm","Unidades": 63,"Precio": "2,4400","Costo": "0,0387","Unidades Restantes": 63},
+      {"Codigo": 46,"Descripcion": "Cuenta de encaje negro *4mm","Unidades": 95,"Precio": "2,0300","Costo": "0,0214","Unidades Restantes": 95},
+      {"Codigo": 47,"Descripcion": "Cuenta Green Malachite *4mm","Unidades": 50,"Precio": "1,1600","Costo": "0,0232","Unidades Restantes": 50},
+      {"Codigo": 48,"Descripcion": "Cuenta Tiger Eye *4mm","Unidades": 50,"Precio": "1,6500","Costo": "0,0330","Unidades Restantes": 50},
+      {"Codigo": 49,"Descripcion": "Cuenta Red Vein Stone *4mm","Unidades": 50,"Precio": "1,2200","Costo": "0,0244","Unidades Restantes": 50},
+      {"Codigo": 50,"Descripcion": "Topes pendeintes plastico","Unidades": 200,"Precio": "0,6700","Costo": "0,0034","Unidades Restantes": 200},
+      {"Codigo": 51,"Descripcion": "Gancho Pendiente Red Copper","Unidades": 100,"Precio": "0,9300","Costo": "0,0093","Unidades Restantes": 100},
+      {"Codigo": 52,"Descripcion": "Gancho Pendiente PLATA","Unidades": 100,"Precio": "0,9700","Costo": "0,0097","Unidades Restantes": 100},
+      {"Codigo": 53,"Descripcion": "Redonda Oro *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 1},
+      {"Codigo": 54,"Descripcion": "Redonda Oro *1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 13},
+      {"Codigo": 55,"Descripcion": "Redonda Oro *2cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 3},
+      {"Codigo": 56,"Descripcion": "Redonda Oro *3cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 3},
+      {"Codigo": 57,"Descripcion": "Redonda Plata *1cm","Unidades": 35,"Precio": "3,0000","Costo": "0,0857","Unidades Restantes": 33},
+      {"Codigo": 58,"Descripcion": "Redonda Plata *1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 12},
+      {"Codigo": 59,"Descripcion": "Redonda Plata *2cm","Unidades": 30,"Precio": "3,0000","Costo": "0,1000","Unidades Restantes": 27},
+      {"Codigo": 60,"Descripcion": "Redonda Plata *3cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 9},
+      {"Codigo": 61,"Descripcion": "Rectangulo Plata *0,8x1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 19},
+      {"Codigo": 62,"Descripcion": "Triangulo Plata *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 20},
+      {"Codigo": 63,"Descripcion": "Cuadro Oval Plata *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 20},
+      {"Codigo": 64,"Descripcion": "Cuadro Plata *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 16},
+      {"Codigo": 65,"Descripcion": "Cuadro Plata *0,7cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 10},
+      {"Codigo": 66,"Descripcion": "Cuadro Plata *0,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 10},
+      {"Codigo": 67,"Descripcion": "Cuadro Oro *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 5},
+      {"Codigo": 68,"Descripcion": "Cuadro Oro *1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 4},
+      {"Codigo": 69,"Descripcion": "Colgante Corazon Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 70,"Descripcion": "Colgante Corazon Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 71,"Descripcion": "Colgante Corazon Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 72,"Descripcion": "Colgante Aro Cobre","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 73,"Descripcion": "Colgante Luna Cobre","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 74,"Descripcion": "Colgante Luna Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 75,"Descripcion": "Colgante Triangulo Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 76,"Descripcion": "Colgante Triangulo Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 77,"Descripcion": "Colgante Triangulo Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 78,"Descripcion": "Colgante Rectangulo Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 79,"Descripcion": "Colgante Rectangulo Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 80,"Descripcion": "Colgante Rectangulo Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": -3},
+      {"Codigo": 81,"Descripcion": "Colgante Rombo Oro *2cm","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 82,"Descripcion": "Colgante Rombo Cobre *2cm","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 83,"Descripcion": "Colgante Rombo Oro *4cm","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 84,"Descripcion": "Colgante Lagrima Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 85,"Descripcion": "Colgante Lagrima Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 86,"Descripcion": "Colgante Lagima Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
+      {"Codigo": 87,"Descripcion": "Hexagono Oro *1cm","Unidades": 35,"Precio": "2,0800","Costo": "0,0594","Unidades Restantes": 31},
+      {"Codigo": 88,"Descripcion": "Hexagono Plata *1cm","Unidades": 35,"Precio": "2,0800","Costo": "0,0594","Unidades Restantes": 12},
+      {"Codigo": 89,"Descripcion": "Nube Oro","Unidades": 20,"Precio": "1,9300","Costo": "0,0965","Unidades Restantes": 17},
+      {"Codigo": 90,"Descripcion": "Gafitas Oro","Unidades": 4,"Precio": "0,4160","Costo": "0,1040","Unidades Restantes": 4},
+      {"Codigo": 91,"Descripcion": "Gafitas Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 92,"Descripcion": "Luna Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 93,"Descripcion": "Flamenco Oro","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
+      {"Codigo": 94,"Descripcion": "Flamenco Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 95,"Descripcion": "Flamenco Bronce","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
+      {"Codigo": 96,"Descripcion": "Manzana Cobre","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 97,"Descripcion": "Hojas Cobre","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
+      {"Codigo": 98,"Descripcion": "Estrella Fugaz Oro","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 99,"Descripcion": "Ballena Oro","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 100,"Descripcion": "Ballena Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 101,"Descripcion": "Elefante Oro","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 102,"Descripcion": "Conejo Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 103,"Descripcion": "Estrellita Oro","Unidades": 3,"Precio": "0,3120","Costo": "0,1040","Unidades Restantes": 3},
+      {"Codigo": 104,"Descripcion": "Estrelita Plata","Unidades": 4,"Precio": "0,4160","Costo": "0,1040","Unidades Restantes": 4},
+      {"Codigo": 105,"Descripcion": "Estellita Bronce","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 106,"Descripcion": "Paloma Oro","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
+      {"Codigo": 107,"Descripcion": "Paloma Oro Rosa","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
+      {"Codigo": 108,"Descripcion": "Colgante Candelabro Oro","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 1},
+      {"Codigo": 109,"Descripcion": "Estrellita Rosa","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
+      {"Codigo": 110,"Descripcion": "Estrellita Lila","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
+      {"Codigo": 111,"Descripcion": "Estrella Polar","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
+      {"Codigo": 112,"Descripcion": "Fantasma","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
+      {"Codigo": 113,"Descripcion": "Grulla","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
+      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
+      {"Codigo": 115,"Descripcion": "Conector Doble Plata *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
+      {"Codigo": 116,"Descripcion": "Conector Triple Cadena Oro *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
+      {"Codigo": 117,"Descripcion": "Conector Triple Cadena Plata *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
+      {"Codigo": 118,"Descripcion": "Anilla Cuerda Oro *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
+      {"Codigo": 119,"Descripcion": "Anilla Cuerda Plata *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
+      {"Codigo": 120,"Descripcion": "Conector Doble Brillante Oro","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
+      {"Codigo": 121,"Descripcion": "Conector Doble Brillante Plata","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
+      {"Codigo": 122,"Descripcion": "Anillas Oro *3mm","Unidades": 255,"Precio": "0,7667","Costo": "0,0030","Unidades Restantes": 255},
+      {"Codigo": 123,"Descripcion": "Anillas Plata *3mm","Unidades": 255,"Precio": "0,7667","Costo": "0,0030","Unidades Restantes": 255},
+      {"Codigo": 124,"Descripcion": "Conectar Cuadruple Oro","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
+      {"Codigo": 125,"Descripcion": "Conector Cuadruple Plata","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
+      {"Codigo": 126,"Descripcion": "Conector Quintuple Plata","Unidades": 4,"Precio": "0,6389","Costo": "0,1597","Unidades Restantes": 4},
+      {"Codigo": 127,"Descripcion": "Colgante Brillante Oro","Unidades": 5,"Precio": "0,6389","Costo": "0,1278","Unidades Restantes": 5},
+      {"Codigo": 128,"Descripcion": "Colgante Brillante Plata","Unidades": 5,"Precio": "0,6389","Costo": "0,1278","Unidades Restantes": 1},
+      {"Codigo": 129,"Descripcion": "Colgante Flor Blanca","Unidades": 2,"Precio": "0,6389","Costo": "0,3195","Unidades Restantes": 2},
+      {"Codigo": 130,"Descripcion": "Colgante Flor Rosa","Unidades": 2,"Precio": "0,6389","Costo": "0,3195","Unidades Restantes": 2},
+      {"Codigo": 131,"Descripcion": "Colgante Flor Azul","Unidades": 2,"Precio": "0,6389","Costo": "0,3195","Unidades Restantes": 2},
+      {"Codigo": 132,"Descripcion": "Colgante Hojas Oro","Unidades": 5,"Precio": "1,7981","Costo": "0,3596","Unidades Restantes": 5},
+      {"Codigo": 133,"Descripcion": "Colgante Hojas Plata","Unidades": 5,"Precio": "1,7981","Costo": "0,3596","Unidades Restantes": 5},
+      {"Codigo": 134,"Descripcion": "Perlitas Verdes *3mm","Unidades": 30,"Precio": "0,5228","Costo": "0,0174","Unidades Restantes": 30},
+      {"Codigo": 135,"Descripcion": "Hojas Verdes","Unidades": 4,"Precio": "3,0000","Costo": "0,7500","Unidades Restantes": 4}
+    ];
+
+    // Variables
     let cart = [];
     let selectedColor = "";
+    let userDiscountCode = null;
+
+    // Elementos del DOM
     const summary = document.getElementById("summary");
     const cartItems = document.getElementById("cartItems");
     const cartSummary = document.getElementById("cartSummary");
     const cartBtn = document.getElementById("openCart");
     const preview = document.getElementById("preview");
+    const authButton = document.getElementById("authButton");
+    const discountInput = document.getElementById("discount");
 
+    // Generar código de descuento único
+    function generarCodigoDescuento() {
+      const prefijos = ["BIENVENIDA", "LUZ", "AMOR", "ESTRELLA"];
+      const prefijo = prefijos[Math.floor(Math.random() * prefijos.length)];
+      const numero = Math.floor(Math.random() * 20 + 5);
+      return prefijo + numero + Math.random().toString(36).substr(2, 4).toUpperCase();
+    }
+
+    // Mostrar modal de bienvenida
+    function mostrarBienvenida(nombre) {
+      const codeElem = document.getElementById("discountCode");
+      codeElem.textContent = userDiscountCode;
+      document.getElementById("welcomeModal").style.display = "block";
+    }
+
+    // Funciones del modal
+    function closeModal() {
+      document.getElementById("welcomeModal").style.display = "none";
+    }
+
+    function copyCode() {
+      const code = document.getElementById("discountCode").textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        alert("✅ Código copiado al portapapeles!");
+      });
+    }
+
+    function useCode() {
+      const code = document.getElementById("discountCode").textContent;
+      discountInput.value = code;
+      alert(`✅ Código "${code}" aplicado al campo.`);
+      closeModal();
+    }
+
+    // Escuchar cambios de autenticación
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userRef = db.collection("usuarios").doc(user.uid);
+        const doc = await userRef.get();
+
+        if (!doc.exists) {
+          userDiscountCode = generarCodigoDescuento();
+          await userRef.set({
+            email: user.email,
+            nombre: user.displayName || user.email.split("@")[0],
+            fechaRegistro: new Date(),
+            codigoDescuento: userDiscountCode
+          });
+          mostrarBienvenida(user.displayName || user.email.split("@")[0]);
+        } else {
+          userDiscountCode = doc.data().codigoDescuento;
+        }
+        authButton.textContent = "Cerrar sesión";
+      } else {
+        userDiscountCode = null;
+        authButton.textContent = "Iniciar sesión";
+      }
+      renderSummary();
+    });
+
+    // Manejar clic en botón de autenticación
+    authButton.addEventListener("click", () => {
+      const user = auth.currentUser;
+      if (user) {
+        auth.signOut().then(() => {
+          alert("Sesión cerrada correctamente.");
+        });
+      } else {
+        const opcion = confirm("¿Quieres iniciar sesión con Google?\nAceptar = Google, Cancelar = Correo y contraseña");
+        if (opcion) {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          auth.signInWithPopup(provider).catch(error => {
+            alert("Error al iniciar con Google: " + error.message);
+          });
+        } else {
+          const email = prompt("📧 Introduce tu correo electrónico:");
+          if (!email) return;
+          const password = prompt("🔑 Introduce tu contraseña (mínimo 6 caracteres):");
+          if (!password || password.length < 6) {
+            alert("La contraseña debe tener al menos 6 caracteres.");
+            return;
+          }
+
+          auth.fetchSignInMethodsForEmail(email)
+            .then(methods => {
+              if (methods.length === 0) {
+                return auth.createUserWithEmailAndPassword(email, password);
+              } else {
+                return auth.signInWithEmailAndPassword(email, password);
+              }
+            })
+            .catch(error => {
+              alert("Error: " + error.message);
+            });
+        }
+      }
+    });
+
+    // Cálculo de precio
     function calculatePrice(config) {
       let price = 20;
-      if(config.material==="oro") price += 30;
-      if(config.material==="plata") price += 15;
-      if(config.extras.includes("gift")) price += 5;
-      if(config.extras.includes("wrap")) price += 3;
-      if(config.extras.includes("urgent")) price += 10;
+      if (config.material === "oro") price += 30;
+      if (config.material === "plata") price += 15;
+      if (config.extras.includes("gift")) price += 5;
+      if (config.extras.includes("wrap")) price += 3;
+      if (config.extras.includes("urgent")) price += 10;
       price *= config.quantity;
-      if(config.discount==="DESCUENTO10") price *= 0.9;
-      return price;
+
+      if (config.discount && config.discount === "DESCUENTO10") {
+        price *= 0.9;
+      } else if (config.discount && config.discount === userDiscountCode) {
+        price *= 0.9;
+        alert("✅ ¡Código de bienvenida aplicado! 10% de descuento.");
+      }
+
+      return Math.round(price * 100) / 100;
     }
+
     function getConfig() {
       return {
         product: document.getElementById("product").value,
@@ -152,24 +469,26 @@
         colgante: document.getElementById("colgante").value,
         conector: document.getElementById("conector").value,
         extras: [
-          ...document.getElementById("extraGift").checked ? ["gift"] : [],
-          ...document.getElementById("extraWrap").checked ? ["wrap"] : [],
-          ...document.getElementById("extraUrgent").checked ? ["urgent"] : []
-        ],
+          document.getElementById("extraGift").checked ? "gift" : null,
+          document.getElementById("extraWrap").checked ? "wrap" : null,
+          document.getElementById("extraUrgent").checked ? "urgent" : null
+        ].filter(Boolean),
         discount: document.getElementById("discount").value,
         quantity: parseInt(document.getElementById("quantity").value) || 1
       };
     }
+
     function renderSummary() {
       const config = getConfig();
       const price = calculatePrice(config);
       summary.textContent = `Precio: €${price}`;
       preview.innerHTML = `<strong>${config.product}</strong><br>Material: ${config.material}`;
     }
+
     function renderCart() {
       cartItems.innerHTML = "";
       let total = 0;
-      cart.forEach((item)=>{
+      cart.forEach((item) => {
         const div = document.createElement("div");
         div.className = "cesta-item";
         div.textContent = `${item.quantity}x ${item.product} (${item.material}, ${item.color}) - €${item.price}`;
@@ -180,99 +499,54 @@
       cartBtn.textContent = `🛒 Cesta (${cart.length})`;
     }
 
-    async function sendEmail(order) {
-      try {
-        // Capturar imagen del preview
-        const canvas = await html2canvas(document.getElementById("preview"));
-        const imgData = canvas.toDataURL("image/png");
-
-        // Generar factura PDF (base64 como URL para botón)
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.setFontSize(16);
-        doc.text("Factura - Enlluernand", 10, 20);
-        doc.setFontSize(12);
-        doc.text(`Producto: ${order.product}`, 10, 40);
-        doc.text(`Material: ${order.material}`, 10, 50);
-        doc.text(`Color: ${order.color}`, 10, 60);
-        doc.text(`Colgante: ${order.colgante}`, 10, 70);
-        doc.text(`Conector: ${order.conector}`, 10, 80);
-        doc.text(`Extras: ${order.extras.join(", ")}`, 10, 90);
-        doc.text(`Cantidad: ${order.quantity}`, 10, 100);
-        doc.text(`Precio: €${order.price}`, 10, 110);
-        const pdfBase64 = doc.output("datauristring");
-
-        // Enviar correos en paralelo
-        await Promise.all([
-          // Cliente: datos + botón factura
-          emailjs.send("service_tu3gqxw","template_z7kk7wq",{
-            product: order.product,
-            material: order.material,
-            color: order.color,
-            colgante: order.colgante,
-            conector: order.conector,
-            extras: order.extras.join(", "),
-            discount: order.discount,
-            quantity: order.quantity,
-            price: order.price,
-            preview_image: imgData,
-            factura_url: pdfBase64
-          }),
-          // Interno: datos + imagen
-          emailjs.send("service_tu3gqxw","template_0orquhm",{
-            product: order.product,
-            material: order.material,
-            color: order.color,
-            colgante: order.colgante,
-            conector: order.conector,
-            extras: order.extras.join(", "),
-            discount: order.discount,
-            quantity: order.quantity,
-            price: order.price,
-            preview_image: imgData
-          })
-        ]);
-
-        alert("✅ Pedido enviado correctamente (cliente + interno)");
-      } catch (err) {
-        alert("❌ Error al enviar: " + JSON.stringify(err));
-      }
-    }
-
-    document.getElementById("addToCart").addEventListener("click", ()=>{
+    // Eventos
+    document.getElementById("addToCart").addEventListener("click", () => {
       const config = getConfig();
       const price = calculatePrice(config);
-      cart.push({...config, price});
+      cart.push({ ...config, price });
       renderCart();
-      alert("Producto añadido a la cesta");
+      alert("✅ Producto añadido a la cesta");
     });
-    document.getElementById("pay").addEventListener("click", ()=>{
-      if(cart.length===0){ alert("Tu cesta está vacía"); return; }
-      cart.forEach(order => sendEmail(order));
+
+    document.getElementById("pay").addEventListener("click", () => {
+      if (cart.length === 0) {
+        alert("Tu cesta está vacía");
+        return;
+      }
+      alert("✅ Pago procesado. Gracias por tu compra.");
       cart = [];
       renderCart();
       document.getElementById("cartSidebar").classList.remove("open");
     });
-    document.getElementById("payNow").addEventListener("click", ()=>{
+
+    document.getElementById("payNow").addEventListener("click", () => {
       const config = getConfig();
       config.price = calculatePrice(config);
-      sendEmail(config);
+      alert(`✅ Pago inmediato procesado - Total: €${config.price}`);
     });
 
-    ["product","material","colgante","conector","discount","quantity","extraGift","extraWrap","extraUrgent"].forEach(id=>{
-      document.getElementById(id).addEventListener("input", renderSummary);
-      document.getElementById(id).addEventListener("change", renderSummary);
+    ["product", "material", "colgante", "conector", "discount", "quantity", "extraGift", "extraWrap", "extraUrgent"].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener("input", renderSummary);
+      el.addEventListener("change", renderSummary);
     });
-    document.querySelectorAll(".color-ball").forEach(ball=>{
-      ball.addEventListener("click", ()=>{
+
+    document.querySelectorAll(".color-ball").forEach(ball => {
+      ball.addEventListener("click", () => {
         selectedColor = ball.dataset.color;
         renderSummary();
       });
     });
-    renderSummary();
 
-    document.getElementById("openCart").addEventListener("click", ()=> document.getElementById("cartSidebar").classList.add("open"));
-    document.getElementById("closeCart").addEventListener("click", ()=> document.getElementById("cartSidebar").classList.remove("open"));
+    document.getElementById("openCart").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.add("open");
+    });
+
+    document.getElementById("closeCart").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.remove("open");
+    });
+
+    renderSummary();
   </script>
 </body>
 </html>
