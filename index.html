@@ -8,9 +8,46 @@
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
   <!-- Firebase SDK (modular) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script type="module">
+    // Importar Firebase modular
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+    import { getFirestore, collection, getDoc, setDoc, doc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZbhHY9mEr3bBMVZLGxZE4NkGMLSPTcL4",
+      authDomain: "enlluernand-77eb5.firebaseapp.com",
+      projectId: "enlluernand-77eb5",
+      storageBucket: "enlluernand-77eb5.firebasestorage.app",
+      messagingSenderId: "904366283683",
+      appId: "1:904366283683:web:816bf521d4b858a4a25816"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Hacer disponibles en window para el resto del script
+    window.firebaseConfig = firebaseConfig;
+    window.auth = auth;
+    window.db = db;
+    window.firebase = {
+      auth,
+      firestore: db,
+      onAuthStateChanged,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut,
+      collection,
+      doc,
+      getDoc,
+      setDoc
+    };
+  </script>
 
   <!-- Librerías para PDF (opcional) -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -65,18 +102,24 @@
     .config-container { display: flex; gap: 20px; }
     .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 18px; min-height: 300px; }
 
-    .conector-item {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 5px;
+    .item-list {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+      max-height: 200px;
+      overflow-y: auto;
     }
 
-    .conector-item button {
-      margin-left: 5px;
-      padding: 0 8px;
-      background: #ccc;
-      border: none;
-      cursor: pointer;
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .item-row button {
+      background: #ff6666; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer;
     }
 
     .sidebar { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -2px 0 8px rgba(0,0,0,0.2); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; z-index: 1000; }
@@ -146,22 +189,37 @@
           <!-- Conectores múltiples -->
           <div>
             <label>Conectores adicionales</label>
-            <div id="conectores-container">
-              <div class="conector-item">
-                <select class="conector-select">
-                  <option value="">Ninguno</option>
-                </select>
-                <input type="number" class="conector-cantidad" value="1" min="1" style="width: 60px; margin-left: 5px;">
-                <button type="button" class="remove-conector" style="background:#ff6666;">✖</button>
+            <div class="item-list" id="conectores-list">
+              <div class="item-row" id="conector-template" style="display:none;">
+                <span class="name"></span>
+                <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+                <button class="remove">✖</button>
               </div>
             </div>
-            <button type="button" id="add-conector" style="margin-top: 5px;">+ Añadir otro conector</button>
+            <select id="add-conector-select">
+              <option value="">Seleccionar conector...</option>
+            </select>
+            <button type="button" id="add-conector-btn">+ Añadir</button>
           </div>
 
-          <label>Extras</label>
-          <input type="checkbox" id="extraGift"> Estuche para regalo (+5€)<br>
-          <input type="checkbox" id="extraWrap"> Envoltorio para regalo (+3€)<br>
-          <input type="checkbox" id="extraUrgent"> Fabricación urgente (+10€)
+          <!-- Extras múltiples -->
+          <div>
+            <label>Extras</label>
+            <div class="item-list" id="extras-list">
+              <div class="item-row" id="extra-template" style="display:none;">
+                <span class="name"></span>
+                <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+                <button class="remove">✖</button>
+              </div>
+            </div>
+            <select id="add-extra-select">
+              <option value="">Seleccionar extra...</option>
+              <option value="gift">Estuche para regalo (+5€)</option>
+              <option value="wrap">Envoltorio para regalo (+3€)</option>
+              <option value="urgent">Fabricación urgente (+10€)</option>
+            </select>
+            <button type="button" id="add-extra-btn">+ Añadir</button>
+          </div>
 
           <label>Código de descuento</label>
           <input type="text" id="discount" placeholder="Introduce tu código">
@@ -198,140 +256,18 @@
     <button id="pay">Pagar</button>
   </div>
 
-  <script>
-    // Inicializar EmailJS
-    (function(){ emailjs.init("QySTAkWHd-G0OkzSS"); })();
+  <script type="module">
+    // Importar firebase desde el módulo inicializado
+    const { auth, db } = window.firebase;
 
-    // Configuración de Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyCZbhHY9mEr3bBMVZLGxZE4NkGMLSPTcL4",
-      authDomain: "enlluernand-77eb5.firebaseapp.com",
-      projectId: "enlluernand-77eb5",
-      storageBucket: "enlluernand-77eb5.firebasestorage.app",
-      messagingSenderId: "904366283683",
-      appId: "1:904366283683:web:816bf521d4b858a4a25816"
-    };
-
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    // Datos de tu Excel (convertidos a JSON)
+    // Datos de tu Excel
     const materiales = [
-      {"Codigo": 1,"Descripcion": "Alfiler cabeza plana ORO *15mm","Unidades": 203,"Precio": "0,9050","Costo": "0,0045","Unidades Restantes": 203},
-      {"Codigo": 2,"Descripcion": "Alfiler cabeza plana PLATA *15mm","Unidades": 203,"Precio": "0,9050","Costo": "0,0045","Unidades Restantes": 203},
-      {"Codigo": 3,"Descripcion": "Alfiler cabeza aro ORO *15mm","Unidades": 204,"Precio": "0,8700","Costo": "0,0043","Unidades Restantes": 204},
-      {"Codigo": 4,"Descripcion": "Alfiler cabeza aro PLATA *15mm","Unidades": 204,"Precio": "0,8700","Costo": "0,0043","Unidades Restantes": 204},
-      {"Codigo": 5,"Descripcion": "Alfiler cabeza bola ORO *15mm","Unidades": 202,"Precio": "1,1400","Costo": "0,0056","Unidades Restantes": 202},
-      {"Codigo": 6,"Descripcion": "Alfiler cabeza bola PLATA * 15mm","Unidades": 207,"Precio": "1,1400","Costo": "0,0055","Unidades Restantes": 207},
-      {"Codigo": 7,"Descripcion": "Papel Origami 7*7","Unidades": 100,"Precio": "0,8000","Costo": "0,0080","Unidades Restantes": 100},
-      {"Codigo": 8,"Descripcion": "Cadena *1mm PLATA","Unidades": 200,"Precio": "1,8300","Costo": "0,0092","Unidades Restantes": 200},
-      {"Codigo": 9,"Descripcion": "Cadena *1mm ORO Rosa","Unidades": 200,"Precio": "2,1400","Costo": "0,0107","Unidades Restantes": 200},
-      {"Codigo": 10,"Descripcion": "Cadena *1mm ORO","Unidades": 200,"Precio": "1,7200","Costo": "0,0086","Unidades Restantes": 200},
-      {"Codigo": 11,"Descripcion": "Pegatinas","Unidades": 200,"Precio": "1,4100","Costo": "0,0071","Unidades Restantes": 200},
-      {"Codigo": 12,"Descripcion": "Pegatinas Letras y Numeros","Unidades": "","Precio": "","Costo": "","Unidades Restantes": 0},
       {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460","Unidades Restantes": 20},
       {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300","Unidades Restantes": 20},
       {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
       {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
       {"Codigo": 17,"Descripcion": "Conector Resina Trebol ORO","Unidades": 20,"Precio": "1,9300","Costo": "0,0965","Unidades Restantes": 20},
       {"Codigo": 18,"Descripcion": "Conector final","Unidades": 235,"Precio": "1,3000","Costo": "0,0055","Unidades Restantes": 235},
-      {"Codigo": 19,"Descripcion": "Mini estrella ORO","Unidades": 30,"Precio": "2,5700","Costo": "0,0857","Unidades Restantes": 30},
-      {"Codigo": 20,"Descripcion": "Mini estrella PLATA","Unidades": 30,"Precio": "2,5700","Costo": "0,0857","Unidades Restantes": 30},
-      {"Codigo": 21,"Descripcion": "Colgante brillante","Unidades": "","Precio": "2,8100","Costo": "","Unidades Restantes": 0},
-      {"Codigo": 22,"Descripcion": "Cadena Larga Pendientes ORO","Unidades": "","Precio": "2,0900","Costo": "","Unidades Restantes": 0},
-      {"Codigo": 23,"Descripcion": "Cadena Larga Pendientes PLATA","Unidades": "","Precio": "2,0900","Costo": "","Unidades Restantes": 0},
-      {"Codigo": 24,"Descripcion": "Flores Secas","Unidades": "","Precio": "2,9500","Costo": "","Unidades Restantes": 0},
-      {"Codigo": 25,"Descripcion": "Juego de Llavero ORO","Unidades": 5,"Precio": "2,0100","Costo": "0,4020","Unidades Restantes": 5},
-      {"Codigo": 26,"Descripcion": "Juego de Llavero PLATA","Unidades": 5,"Precio": "2,0100","Costo": "0,4020","Unidades Restantes": 5},
-      {"Codigo": 27,"Descripcion": "Anillo Conector *3mm","Unidades": 500,"Precio": "0,8700","Costo": "0,0017","Unidades Restantes": 500},
-      {"Codigo": 28,"Descripcion": "Anillo Conector *10mm","Unidades": 100,"Precio": "1,6900","Costo": "0,0169","Unidades Restantes": 100},
-      {"Codigo": 29,"Descripcion": "Anillo Conector *4mm","Unidades": 200,"Precio": "0,7800","Costo": "0,0039","Unidades Restantes": 200},
-      {"Codigo": 30,"Descripcion": "Relleno Resina Decoracion","Unidades": 2000,"Precio": "2,0950","Costo": "0,0010","Unidades Restantes": 2},
-      {"Codigo": 31,"Descripcion": "Relleno Resina Flores","Unidades": "","Precio": "1,1900","Costo": "","Unidades Restantes": 0},
-      {"Codigo": 32,"Descripcion": "Resina UV dura","Unidades": 100,"Precio": "8,8750","Costo": "0,0888","Unidades Restantes": 100},
-      {"Codigo": 33,"Descripcion": "Figuras geometricas Resina","Unidades": 50,"Precio": "2,7300","Costo": "0,0546","Unidades Restantes": 50},
-      {"Codigo": 34,"Descripcion": "Broche de langosta ORO","Unidades": 40,"Precio": "1,3100","Costo": "0,0328","Unidades Restantes": 40},
-      {"Codigo": 35,"Descripcion": "Broche langosta PLATA","Unidades": 40,"Precio": "1,2500","Costo": "0,0313","Unidades Restantes": 40},
-      {"Codigo": 36,"Descripcion": "Protector cable","Unidades": 200,"Precio": "1,3000","Costo": "0,0065","Unidades Restantes": 200},
-      {"Codigo": 37,"Descripcion": "Separador PLATA 925 *15mm","Unidades": 40,"Precio": "4,7000","Costo": "0,1175","Unidades Restantes": 40},
-      {"Codigo": 38,"Descripcion": "Cuentas espaciadoras","Unidades": 50,"Precio": "1,3700","Costo": "0,0274","Unidades Restantes": 50},
-      {"Codigo": 39,"Descripcion": "Cuenta Piedra luna *4mm","Unidades": 91,"Precio": "1,6300","Costo": "0,0179","Unidades Restantes": 91},
-      {"Codigo": 40,"Descripcion": "Cuenta Piedra luna *6mm","Unidades": 61,"Precio": "1,5600","Costo": "0,0256","Unidades Restantes": 61},
-      {"Codigo": 41,"Descripcion": "Cuenta Isywaka Blanca 4*6mm","Unidades": 50,"Precio": "0,6100","Costo": "0,0122","Unidades Restantes": 50},
-      {"Codigo": 42,"Descripcion": "Cuenta Isywaka Negra 4*6mm","Unidades": 50,"Precio": "0,6100","Costo": "0,0122","Unidades Restantes": 50},
-      {"Codigo": 43,"Descripcion": "Cuenta Multicolor *6mm","Unidades": 1000,"Precio": "0,8300","Costo": "0,0008","Unidades Restantes": 1},
-      {"Codigo": 44,"Descripcion": "Cuenta Multicolor *4mm","Unidades": 2500,"Precio": "0,6300","Costo": "0,0003","Unidades Restantes": 2.5},
-      {"Codigo": 45,"Descripcion": "Cuenta de encaje negro *6mm","Unidades": 63,"Precio": "2,4400","Costo": "0,0387","Unidades Restantes": 63},
-      {"Codigo": 46,"Descripcion": "Cuenta de encaje negro *4mm","Unidades": 95,"Precio": "2,0300","Costo": "0,0214","Unidades Restantes": 95},
-      {"Codigo": 47,"Descripcion": "Cuenta Green Malachite *4mm","Unidades": 50,"Precio": "1,1600","Costo": "0,0232","Unidades Restantes": 50},
-      {"Codigo": 48,"Descripcion": "Cuenta Tiger Eye *4mm","Unidades": 50,"Precio": "1,6500","Costo": "0,0330","Unidades Restantes": 50},
-      {"Codigo": 49,"Descripcion": "Cuenta Red Vein Stone *4mm","Unidades": 50,"Precio": "1,2200","Costo": "0,0244","Unidades Restantes": 50},
-      {"Codigo": 50,"Descripcion": "Topes pendeintes plastico","Unidades": 200,"Precio": "0,6700","Costo": "0,0034","Unidades Restantes": 200},
-      {"Codigo": 51,"Descripcion": "Gancho Pendiente Red Copper","Unidades": 100,"Precio": "0,9300","Costo": "0,0093","Unidades Restantes": 100},
-      {"Codigo": 52,"Descripcion": "Gancho Pendiente PLATA","Unidades": 100,"Precio": "0,9700","Costo": "0,0097","Unidades Restantes": 100},
-      {"Codigo": 53,"Descripcion": "Redonda Oro *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 1},
-      {"Codigo": 54,"Descripcion": "Redonda Oro *1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 13},
-      {"Codigo": 55,"Descripcion": "Redonda Oro *2cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 3},
-      {"Codigo": 56,"Descripcion": "Redonda Oro *3cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 3},
-      {"Codigo": 57,"Descripcion": "Redonda Plata *1cm","Unidades": 35,"Precio": "3,0000","Costo": "0,0857","Unidades Restantes": 33},
-      {"Codigo": 58,"Descripcion": "Redonda Plata *1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 12},
-      {"Codigo": 59,"Descripcion": "Redonda Plata *2cm","Unidades": 30,"Precio": "3,0000","Costo": "0,1000","Unidades Restantes": 27},
-      {"Codigo": 60,"Descripcion": "Redonda Plata *3cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 9},
-      {"Codigo": 61,"Descripcion": "Rectangulo Plata *0,8x1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 19},
-      {"Codigo": 62,"Descripcion": "Triangulo Plata *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 20},
-      {"Codigo": 63,"Descripcion": "Cuadro Oval Plata *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 20},
-      {"Codigo": 64,"Descripcion": "Cuadro Plata *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 16},
-      {"Codigo": 65,"Descripcion": "Cuadro Plata *0,7cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 10},
-      {"Codigo": 66,"Descripcion": "Cuadro Plata *0,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 10},
-      {"Codigo": 67,"Descripcion": "Cuadro Oro *1cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 5},
-      {"Codigo": 68,"Descripcion": "Cuadro Oro *1,5cm","Unidades": 20,"Precio": "3,0000","Costo": "0,1500","Unidades Restantes": 4},
-      {"Codigo": 69,"Descripcion": "Colgante Corazon Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 70,"Descripcion": "Colgante Corazon Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 71,"Descripcion": "Colgante Corazon Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 72,"Descripcion": "Colgante Aro Cobre","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 73,"Descripcion": "Colgante Luna Cobre","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 74,"Descripcion": "Colgante Luna Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 75,"Descripcion": "Colgante Triangulo Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 76,"Descripcion": "Colgante Triangulo Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 77,"Descripcion": "Colgante Triangulo Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 78,"Descripcion": "Colgante Rectangulo Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 79,"Descripcion": "Colgante Rectangulo Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 80,"Descripcion": "Colgante Rectangulo Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": -3},
-      {"Codigo": 81,"Descripcion": "Colgante Rombo Oro *2cm","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 82,"Descripcion": "Colgante Rombo Cobre *2cm","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 83,"Descripcion": "Colgante Rombo Oro *4cm","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 84,"Descripcion": "Colgante Lagrima Oro","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 85,"Descripcion": "Colgante Lagrima Plata","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 86,"Descripcion": "Colgante Lagima Bronce","Unidades": 1,"Precio": "0,1595","Costo": "0,1595","Unidades Restantes": 1},
-      {"Codigo": 87,"Descripcion": "Hexagono Oro *1cm","Unidades": 35,"Precio": "2,0800","Costo": "0,0594","Unidades Restantes": 31},
-      {"Codigo": 88,"Descripcion": "Hexagono Plata *1cm","Unidades": 35,"Precio": "2,0800","Costo": "0,0594","Unidades Restantes": 12},
-      {"Codigo": 89,"Descripcion": "Nube Oro","Unidades": 20,"Precio": "1,9300","Costo": "0,0965","Unidades Restantes": 17},
-      {"Codigo": 90,"Descripcion": "Gafitas Oro","Unidades": 4,"Precio": "0,4160","Costo": "0,1040","Unidades Restantes": 4},
-      {"Codigo": 91,"Descripcion": "Gafitas Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 92,"Descripcion": "Luna Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 93,"Descripcion": "Flamenco Oro","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
-      {"Codigo": 94,"Descripcion": "Flamenco Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 95,"Descripcion": "Flamenco Bronce","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
-      {"Codigo": 96,"Descripcion": "Manzana Cobre","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 97,"Descripcion": "Hojas Cobre","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
-      {"Codigo": 98,"Descripcion": "Estrella Fugaz Oro","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 99,"Descripcion": "Ballena Oro","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 100,"Descripcion": "Ballena Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 101,"Descripcion": "Elefante Oro","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 102,"Descripcion": "Conejo Plata","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 103,"Descripcion": "Estrellita Oro","Unidades": 3,"Precio": "0,3120","Costo": "0,1040","Unidades Restantes": 3},
-      {"Codigo": 104,"Descripcion": "Estrelita Plata","Unidades": 4,"Precio": "0,4160","Costo": "0,1040","Unidades Restantes": 4},
-      {"Codigo": 105,"Descripcion": "Estellita Bronce","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 106,"Descripcion": "Paloma Oro","Unidades": 2,"Precio": "0,2080","Costo": "0,1040","Unidades Restantes": 2},
-      {"Codigo": 107,"Descripcion": "Paloma Oro Rosa","Unidades": 1,"Precio": "0,1040","Costo": "0,1040","Unidades Restantes": 1},
-      {"Codigo": 108,"Descripcion": "Colgante Candelabro Oro","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 1},
-      {"Codigo": 109,"Descripcion": "Estrellita Rosa","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
-      {"Codigo": 110,"Descripcion": "Estrellita Lila","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
-      {"Codigo": 111,"Descripcion": "Estrella Polar","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
-      {"Codigo": 112,"Descripcion": "Fantasma","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
-      {"Codigo": 113,"Descripcion": "Grulla","Unidades": 2,"Precio": "3,0000","Costo": "1,5000","Unidades Restantes": 2},
       {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
       {"Codigo": 115,"Descripcion": "Conector Doble Plata *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
       {"Codigo": 116,"Descripcion": "Conector Triple Cadena Oro *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
@@ -340,21 +276,17 @@
       {"Codigo": 119,"Descripcion": "Anilla Cuerda Plata *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
       {"Codigo": 120,"Descripcion": "Conector Doble Brillante Oro","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
       {"Codigo": 121,"Descripcion": "Conector Doble Brillante Plata","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
-      {"Codigo": 122,"Descripcion": "Anillas Oro *3mm","Unidades": 255,"Precio": "0,7667","Costo": "0,0030","Unidades Restantes": 255},
-      {"Codigo": 123,"Descripcion": "Anillas Plata *3mm","Unidades": 255,"Precio": "0,7667","Costo": "0,0030","Unidades Restantes": 255},
       {"Codigo": 124,"Descripcion": "Conectar Cuadruple Oro","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
       {"Codigo": 125,"Descripcion": "Conector Cuadruple Plata","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
-      {"Codigo": 126,"Descripcion": "Conector Quintuple Plata","Unidades": 4,"Precio": "0,6389","Costo": "0,1597","Unidades Restantes": 4},
-      {"Codigo": 127,"Descripcion": "Colgante Brillante Oro","Unidades": 5,"Precio": "0,6389","Costo": "0,1278","Unidades Restantes": 5},
-      {"Codigo": 128,"Descripcion": "Colgante Brillante Plata","Unidades": 5,"Precio": "0,6389","Costo": "0,1278","Unidades Restantes": 1},
-      {"Codigo": 129,"Descripcion": "Colgante Flor Blanca","Unidades": 2,"Precio": "0,6389","Costo": "0,3195","Unidades Restantes": 2},
-      {"Codigo": 130,"Descripcion": "Colgante Flor Rosa","Unidades": 2,"Precio": "0,6389","Costo": "0,3195","Unidades Restantes": 2},
-      {"Codigo": 131,"Descripcion": "Colgante Flor Azul","Unidades": 2,"Precio": "0,6389","Costo": "0,3195","Unidades Restantes": 2},
-      {"Codigo": 132,"Descripcion": "Colgante Hojas Oro","Unidades": 5,"Precio": "1,7981","Costo": "0,3596","Unidades Restantes": 5},
-      {"Codigo": 133,"Descripcion": "Colgante Hojas Plata","Unidades": 5,"Precio": "1,7981","Costo": "0,3596","Unidades Restantes": 5},
-      {"Codigo": 134,"Descripcion": "Perlitas Verdes *3mm","Unidades": 30,"Precio": "0,5228","Costo": "0,0174","Unidades Restantes": 30},
-      {"Codigo": 135,"Descripcion": "Hojas Verdes","Unidades": 4,"Precio": "3,0000","Costo": "0,7500","Unidades Restantes": 4}
+      {"Codigo": 126,"Descripcion": "Conector Quintuple Plata","Unidades": 4,"Precio": "0,6389","Costo": "0,1597","Unidades Restantes": 4}
     ];
+
+    // Extras disponibles
+    const extras = {
+      gift: { name: "Estuche para regalo", price: 5 },
+      wrap: { name: "Envoltorio para regalo", price: 3 },
+      urgent: { name: "Fabricación urgente", price: 10 }
+    };
 
     // Variables
     let cart = [];
@@ -437,11 +369,9 @@
           userDiscountCode = data.codigoDescuento;
           userDisplayName = data.nombre;
 
-          // Verificar si expiró
           if (new Date() > new Date(data.expira)) {
             userDiscountCode = null;
           }
-          // O si ya fue usado
           if (data.usado) {
             userDiscountCode = null;
           }
@@ -465,7 +395,7 @@
       } else {
         const opcion = confirm("¿Quieres iniciar sesión con Google?\nAceptar = Google, Cancelar = Correo y contraseña");
         if (opcion) {
-          const provider = new firebase.auth.GoogleAuthProvider();
+          const provider = new firebase.GoogleAuthProvider();
           auth.signInWithPopup(provider).catch(error => {
             alert("Error al iniciar con Google: " + error.message);
           });
@@ -493,48 +423,95 @@
       }
     });
 
-    // Llenar todos los selectores de conectores
+    // Llenar selectores
     function llenarConectores() {
-      const container = document.getElementById("conectores-container");
-      const selects = container.querySelectorAll(".conector-select");
-
-      selects.forEach(select => {
-        select.innerHTML = '<option value="">Ninguno</option>';
-
-        const conectores = materiales.filter(item => item.Descripcion.includes("Conector"));
-        conectores.forEach(item => {
-          const option = document.createElement("option");
-          option.value = item.Codigo;
-          option.textContent = `${item.Descripcion} - €${item.Precio}`;
-          select.appendChild(option);
-        });
+      const select = document.getElementById("add-conector-select");
+      select.innerHTML = '<option value="">Seleccionar conector...</option>';
+      materiales.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.Codigo;
+        option.textContent = `${item.Descripcion} - €${item.Precio}`;
+        select.appendChild(option);
       });
     }
 
-    // Obtener todos los conectores seleccionados
+    // Añadir conector
+    document.getElementById("add-conector-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-conector-select");
+      const codigo = select.value;
+      if (!codigo) return;
+      const material = materiales.find(m => m.Codigo == codigo);
+      if (!material) return;
+
+      const list = document.getElementById("conectores-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.codigo = codigo;
+      row.innerHTML = `
+        <span class="name">${material.Descripcion}</span>
+        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+        <button class="remove">✖</button>
+      `;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Añadir extra
+    document.getElementById("add-extra-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-extra-select");
+      const key = select.value;
+      if (!key) return;
+      const extra = extras[key];
+      if (!extra) return;
+
+      const list = document.getElementById("extras-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.key = key;
+      row.innerHTML = `
+        <span class="name">${extra.name}</span>
+        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+        <button class="remove">✖</button>
+      `;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Eliminar elemento
+    document.getElementById("conectores-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) {
+        e.target.closest(".item-row").remove();
+        renderSummary();
+      }
+    });
+
+    document.getElementById("extras-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) {
+        e.target.closest(".item-row").remove();
+        renderSummary();
+      }
+    });
+
+    // Obtener conectores seleccionados
     function getConectores() {
-      const container = document.getElementById("conectores-container");
-      const items = container.querySelectorAll(".conector-item");
-      const result = [];
-
-      items.forEach(item => {
-        const select = item.querySelector(".conector-select");
-        const input = item.querySelector(".conector-cantidad");
-        const codigo = select.value;
-        const cantidad = parseInt(input.value) || 1;
-
-        if (codigo) {
-          const material = materiales.find(m => m.Codigo == codigo);
-          if (material) {
-            result.push({
-              ...material,
-              cantidad
-            });
-          }
-        }
+      const rows = document.querySelectorAll("#conectores-list .item-row");
+      return Array.from(rows).map(row => {
+        const codigo = row.dataset.codigo;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { codigo, cantidad };
       });
+    }
 
-      return result;
+    // Obtener extras seleccionados
+    function getExtras() {
+      const rows = document.querySelectorAll("#extras-list .item-row");
+      return Array.from(rows).map(row => {
+        const key = row.dataset.key;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { key, cantidad };
+      });
     }
 
     // Cálculo de precio
@@ -542,20 +519,27 @@
       let price = 20;
       if (config.material === "oro") price += 30;
       if (config.material === "plata") price += 15;
-      if (config.extras.includes("gift")) price += 5;
-      if (config.extras.includes("wrap")) price += 3;
-      if (config.extras.includes("urgent")) price += 10;
 
-      // Añadir precio de conectores
-      const conectores = getConectores();
-      conectores.forEach(item => {
-        const precioNum = parseFloat(item.Precio.replace(",", "."));
-        price += precioNum * item.cantidad;
+      // Conectores
+      getConectores().forEach(item => {
+        const material = materiales.find(m => m.Codigo == item.codigo);
+        if (material) {
+          const precioNum = parseFloat(material.Precio.replace(",", "."));
+          price += precioNum * item.cantidad;
+        }
+      });
+
+      // Extras
+      getExtras().forEach(item => {
+        const extra = extras[item.key];
+        if (extra) {
+          price += extra.price * item.cantidad;
+        }
       });
 
       price *= config.quantity;
 
-      // Aplicar descuento
+      // Descuento
       if (config.discount && config.discount === "DESCUENTO10") {
         price *= 0.95;
       } else if (config.discount && config.discount === userDiscountCode) {
@@ -571,7 +555,6 @@
               alert("❌ Este código ha expirado.");
               return;
             }
-            // Marcar como usado
             db.collection("usuarios").doc(user.uid).update({ usado: true });
             alert("✅ ¡Código de bienvenida aplicado! 5% de descuento.");
           });
@@ -588,14 +571,10 @@
         material: document.getElementById("material").value,
         color: selectedColor,
         colgante: document.getElementById("colgante").value,
-        extras: [
-          document.getElementById("extraGift").checked ? "gift" : null,
-          document.getElementById("extraWrap").checked ? "wrap" : null,
-          document.getElementById("extraUrgent").checked ? "urgent" : null
-        ].filter(Boolean),
+        extras: getExtras(),
+        conectores: getConectores(),
         discount: document.getElementById("discount").value,
-        quantity: parseInt(document.getElementById("quantity").value) || 1,
-        conectores: getConectores() // Guardar conectores en el carrito
+        quantity: parseInt(document.getElementById("quantity").value) || 1
       };
     }
 
@@ -612,7 +591,7 @@
       cart.forEach((item) => {
         const div = document.createElement("div");
         div.className = "cesta-item";
-        div.textContent = `${item.quantity}x ${item.product} (${item.material}, ${item.color}) - €${item.price}`;
+        div.textContent = `${item.quantity}x ${item.product} (${item.material}) - €${item.price}`;
         cartItems.appendChild(div);
         total += item.price;
       });
@@ -646,12 +625,10 @@
       alert(`✅ Pago inmediato procesado - Total: €${config.price}`);
     });
 
-    ["product", "material", "colgante", "discount", "quantity", "extraGift", "extraWrap", "extraUrgent"].forEach(id => {
+    ["product", "material", "colgante", "discount", "quantity"].forEach(id => {
       const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener("input", renderSummary);
-        el.addEventListener("change", renderSummary);
-      }
+      el.addEventListener("input", renderSummary);
+      el.addEventListener("change", renderSummary);
     });
 
     document.querySelectorAll(".color-ball").forEach(ball => {
@@ -669,33 +646,7 @@
       document.getElementById("cartSidebar").classList.remove("open");
     });
 
-    // Botón para añadir más conectores
-    document.getElementById("add-conector").addEventListener("click", () => {
-      const container = document.getElementById("conectores-container");
-      const newItem = document.createElement("div");
-      newItem.className = "conector-item";
-      newItem.innerHTML = `
-        <select class="conector-select"></select>
-        <input type="number" class="conector-cantidad" value="1" min="1" style="width: 60px; margin-left: 5px;">
-        <button type="button" class="remove-conector" style="background:#ff6666;">✖</button>
-      `;
-      container.appendChild(newItem);
-      llenarConectores(); // Vuelve a llenar los selectores
-    });
-
-    // Eliminar conector
-    document.getElementById("conectores-container").addEventListener("click", (e) => {
-      if (e.target.classList.contains("remove-conector")) {
-        e.target.parentElement.remove();
-        renderSummary();
-      }
-    });
-
-    // Escuchar cambios en conectores
-    document.getElementById("conectores-container").addEventListener("change", renderSummary);
-    document.getElementById("conectores-container").addEventListener("input", renderSummary);
-
-    // Llenar conectores al cargar
+    // Inicializar
     window.onload = function() {
       llenarConectores();
       renderSummary();
