@@ -30,9 +30,6 @@
     const db = getFirestore(app);
 
     // Hacer disponibles en window para el resto del script
-    window.firebaseConfig = firebaseConfig;
-    window.auth = auth;
-    window.db = db;
     window.firebase = {
       auth,
       firestore: db,
@@ -184,7 +181,12 @@
           </div>
 
           <label>Colgante</label>
-          <select id="colgante"><option value="">Ninguno</option><option value="corazon">Corazón</option></select>
+          <select id="colgante">
+            <option value="">Ninguno</option>
+            <option value="corazon">Corazón</option>
+            <option value="estrella">Estrella</option>
+            <option value="nube">Nube</option>
+          </select>
 
           <!-- Conectores múltiples -->
           <div>
@@ -199,7 +201,7 @@
             <select id="add-conector-select">
               <option value="">Seleccionar conector...</option>
             </select>
-            <button type="button" id="add-conector-btn">+ Añadir</button>
+            <button type="button" id="add-conector-btn">+ Añadir conector</button>
           </div>
 
           <!-- Extras múltiples -->
@@ -218,7 +220,7 @@
               <option value="wrap">Envoltorio para regalo (+3€)</option>
               <option value="urgent">Fabricación urgente (+10€)</option>
             </select>
-            <button type="button" id="add-extra-btn">+ Añadir</button>
+            <button type="button" id="add-extra-btn">+ Añadir extra</button>
           </div>
 
           <label>Código de descuento</label>
@@ -229,7 +231,8 @@
 
           <div class="summary" id="summary">Precio: €0</div>
 
-          <button id="addToCart">Añadir a la cesta</button>
+          <!-- Botón para añadir el artículo completo a la cesta -->
+          <button id="addProductToCart">+ Añadir artículo</button>
           <button id="payNow">Pagar ahora</button>
         </div>
       </div>
@@ -258,9 +261,9 @@
 
   <script type="module">
     // Importar firebase desde el módulo inicializado
-    const { auth, db } = window.firebase;
+    const { auth, firestore: db } = window.firebase;
 
-    // Datos de tu Excel
+    // Datos de tu Excel (solo conectores)
     const materiales = [
       {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460","Unidades Restantes": 20},
       {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300","Unidades Restantes": 20},
@@ -588,26 +591,56 @@
     function renderCart() {
       cartItems.innerHTML = "";
       let total = 0;
-      cart.forEach((item) => {
+
+      cart.forEach((item, index) => {
         const div = document.createElement("div");
         div.className = "cesta-item";
-        div.textContent = `${item.quantity}x ${item.product} (${item.material}) - €${item.price}`;
+        div.innerHTML = `
+          <strong>${item.quantity}x ${item.product}</strong> (${item.material})<br>
+          Colgante: ${item.colgante || "Ninguno"}<br>
+          Conectores: ${item.conectores.length} tipo(s), Extras: ${item.extras.length} tipo(s)
+          <hr>
+        `;
         cartItems.appendChild(div);
         total += item.price;
       });
+
       cartSummary.textContent = `Total: €${total}`;
       cartBtn.textContent = `🛒 Cesta (${cart.length})`;
     }
 
-    // Eventos
-    document.getElementById("addToCart").addEventListener("click", () => {
+    // Añadir artículo a la cesta
+    document.getElementById("addProductToCart").addEventListener("click", () => {
       const config = getConfig();
       const price = calculatePrice(config);
-      cart.push({ ...config, price });
+
+      cart.push({
+        ...config,
+        price,
+        id: Date.now()
+      });
+
       renderCart();
-      alert("✅ Producto añadido a la cesta");
+      alert("✅ Artículo añadido a la cesta");
+
+      // Limpiar formulario para nuevo artículo
+      document.getElementById("product").value = "collar";
+      document.getElementById("material").value = "oro";
+      document.getElementById("colgante").value = "";
+      document.getElementById("quantity").value = 1;
+      document.getElementById("discount").value = "";
+      selectedColor = "";
+
+      // Limpiar listas
+      document.getElementById("conectores-list").innerHTML = '<div class="item-row" id="conector-template" style="display:none;"><span class="name"></span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button></div>';
+      document.getElementById("extras-list").innerHTML = '<div class="item-row" id="extra-template" style="display:none;"><span class="name"></span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button></div>';
+
+      // Resetear colores
+      document.querySelectorAll(".color-ball").forEach(ball => ball.style.border = "1px solid #333");
+      renderSummary();
     });
 
+    // Pagar
     document.getElementById("pay").addEventListener("click", () => {
       if (cart.length === 0) {
         alert("Tu cesta está vacía");
@@ -625,6 +658,7 @@
       alert(`✅ Pago inmediato procesado - Total: €${config.price}`);
     });
 
+    // Eventos
     ["product", "material", "colgante", "discount", "quantity"].forEach(id => {
       const el = document.getElementById(id);
       el.addEventListener("input", renderSummary);
@@ -633,6 +667,8 @@
 
     document.querySelectorAll(".color-ball").forEach(ball => {
       ball.addEventListener("click", () => {
+        document.querySelectorAll(".color-ball").forEach(b => b.style.border = "1px solid #333");
+        ball.style.border = "2px solid black";
         selectedColor = ball.dataset.color;
         renderSummary();
       });
