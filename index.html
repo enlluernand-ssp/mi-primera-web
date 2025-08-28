@@ -65,6 +65,20 @@
     .config-container { display: flex; gap: 20px; }
     .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 18px; min-height: 300px; }
 
+    .conector-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .conector-item button {
+      margin-left: 5px;
+      padding: 0 8px;
+      background: #ccc;
+      border: none;
+      cursor: pointer;
+    }
+
     .sidebar { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -2px 0 8px rgba(0,0,0,0.2); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; z-index: 1000; }
     .sidebar.open { right: 0; }
     .sidebar h2 { margin-top: 0; }
@@ -129,8 +143,20 @@
           <label>Colgante</label>
           <select id="colgante"><option value="">Ninguno</option><option value="corazon">Corazón</option></select>
 
-          <label>Conector</label>
-          <select id="conector"></select>
+          <!-- Conectores múltiples -->
+          <div>
+            <label>Conectores adicionales</label>
+            <div id="conectores-container">
+              <div class="conector-item">
+                <select class="conector-select">
+                  <option value="">Ninguno</option>
+                </select>
+                <input type="number" class="conector-cantidad" value="1" min="1" style="width: 60px; margin-left: 5px;">
+                <button type="button" class="remove-conector" style="background:#ff6666;">✖</button>
+              </div>
+            </div>
+            <button type="button" id="add-conector" style="margin-top: 5px;">+ Añadir otro conector</button>
+          </div>
 
           <label>Extras</label>
           <input type="checkbox" id="extraGift"> Estuche para regalo (+5€)<br>
@@ -467,6 +493,50 @@
       }
     });
 
+    // Llenar todos los selectores de conectores
+    function llenarConectores() {
+      const container = document.getElementById("conectores-container");
+      const selects = container.querySelectorAll(".conector-select");
+
+      selects.forEach(select => {
+        select.innerHTML = '<option value="">Ninguno</option>';
+
+        const conectores = materiales.filter(item => item.Descripcion.includes("Conector"));
+        conectores.forEach(item => {
+          const option = document.createElement("option");
+          option.value = item.Codigo;
+          option.textContent = `${item.Descripcion} - €${item.Precio}`;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    // Obtener todos los conectores seleccionados
+    function getConectores() {
+      const container = document.getElementById("conectores-container");
+      const items = container.querySelectorAll(".conector-item");
+      const result = [];
+
+      items.forEach(item => {
+        const select = item.querySelector(".conector-select");
+        const input = item.querySelector(".conector-cantidad");
+        const codigo = select.value;
+        const cantidad = parseInt(input.value) || 1;
+
+        if (codigo) {
+          const material = materiales.find(m => m.Codigo == codigo);
+          if (material) {
+            result.push({
+              ...material,
+              cantidad
+            });
+          }
+        }
+      });
+
+      return result;
+    }
+
     // Cálculo de precio
     function calculatePrice(config) {
       let price = 20;
@@ -475,8 +545,17 @@
       if (config.extras.includes("gift")) price += 5;
       if (config.extras.includes("wrap")) price += 3;
       if (config.extras.includes("urgent")) price += 10;
+
+      // Añadir precio de conectores
+      const conectores = getConectores();
+      conectores.forEach(item => {
+        const precioNum = parseFloat(item.Precio.replace(",", "."));
+        price += precioNum * item.cantidad;
+      });
+
       price *= config.quantity;
 
+      // Aplicar descuento
       if (config.discount && config.discount === "DESCUENTO10") {
         price *= 0.95;
       } else if (config.discount && config.discount === userDiscountCode) {
@@ -509,14 +588,14 @@
         material: document.getElementById("material").value,
         color: selectedColor,
         colgante: document.getElementById("colgante").value,
-        conector: document.getElementById("conector").value,
         extras: [
           document.getElementById("extraGift").checked ? "gift" : null,
           document.getElementById("extraWrap").checked ? "wrap" : null,
           document.getElementById("extraUrgent").checked ? "urgent" : null
         ].filter(Boolean),
         discount: document.getElementById("discount").value,
-        quantity: parseInt(document.getElementById("quantity").value) || 1
+        quantity: parseInt(document.getElementById("quantity").value) || 1,
+        conectores: getConectores() // Guardar conectores en el carrito
       };
     }
 
@@ -539,20 +618,6 @@
       });
       cartSummary.textContent = `Total: €${total}`;
       cartBtn.textContent = `🛒 Cesta (${cart.length})`;
-    }
-
-    // Llenar el selector de "Conector" con datos del Excel
-    function llenarConectores() {
-      const select = document.getElementById("conector");
-      select.innerHTML = '<option value="">Ninguno</option>';
-
-      const conectores = materiales.filter(item => item.Descripcion.includes("Conector"));
-      conectores.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item.Codigo;
-        option.textContent = `${item.Descripcion} - €${item.Precio}`;
-        select.appendChild(option);
-      });
     }
 
     // Eventos
@@ -581,10 +646,12 @@
       alert(`✅ Pago inmediato procesado - Total: €${config.price}`);
     });
 
-    ["product", "material", "colgante", "conector", "discount", "quantity", "extraGift", "extraWrap", "extraUrgent"].forEach(id => {
+    ["product", "material", "colgante", "discount", "quantity", "extraGift", "extraWrap", "extraUrgent"].forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener("input", renderSummary);
-      el.addEventListener("change", renderSummary);
+      if (el) {
+        el.addEventListener("input", renderSummary);
+        el.addEventListener("change", renderSummary);
+      }
     });
 
     document.querySelectorAll(".color-ball").forEach(ball => {
@@ -601,6 +668,32 @@
     document.getElementById("closeCart").addEventListener("click", () => {
       document.getElementById("cartSidebar").classList.remove("open");
     });
+
+    // Botón para añadir más conectores
+    document.getElementById("add-conector").addEventListener("click", () => {
+      const container = document.getElementById("conectores-container");
+      const newItem = document.createElement("div");
+      newItem.className = "conector-item";
+      newItem.innerHTML = `
+        <select class="conector-select"></select>
+        <input type="number" class="conector-cantidad" value="1" min="1" style="width: 60px; margin-left: 5px;">
+        <button type="button" class="remove-conector" style="background:#ff6666;">✖</button>
+      `;
+      container.appendChild(newItem);
+      llenarConectores(); // Vuelve a llenar los selectores
+    });
+
+    // Eliminar conector
+    document.getElementById("conectores-container").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove-conector")) {
+        e.target.parentElement.remove();
+        renderSummary();
+      }
+    });
+
+    // Escuchar cambios en conectores
+    document.getElementById("conectores-container").addEventListener("change", renderSummary);
+    document.getElementById("conectores-container").addEventListener("input", renderSummary);
 
     // Llenar conectores al cargar
     window.onload = function() {
