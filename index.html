@@ -7,7 +7,7 @@
   <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
-  <!-- Firebase SDK (compat) - Funciona directamente en navegador -->
+  <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -84,7 +84,11 @@
     .color-ball { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; cursor: pointer; }
 
     .config-container { display: flex; gap: 20px; }
-    .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 18px; min-height: 300px; }
+    .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 16px; min-height: 300px; padding: 15px; text-align: center; }
+
+    .preview-title { font-size: 1.4em; font-weight: bold; color: #0077cc; margin: 0 0 10px; }
+    .preview-line { font-size: 0.95em; color: #555; margin: 3px 0; }
+    .preview-colors { display: flex; gap: 6px; margin: 8px 0; justify-content: center; }
 
     .sidebar { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -2px 0 8px rgba(0,0,0,0.2); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; z-index: 1000; }
     .sidebar.open { right: 0; }
@@ -123,13 +127,13 @@
       <div class="config-container">
         <!-- Vista previa -->
         <div class="preview" id="preview">
-          <strong>Selecciona un producto</strong><br>
-          Añade materiales, colores y más
+          <div class="preview-title">Ningún producto</div>
+          <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
         </div>
 
         <!-- Controles -->
         <div class="controls">
-          <!-- Producto (único, sin botón "Añadir") -->
+          <!-- Producto (único) -->
           <label>Producto</label>
           <select id="product">
             <option value="">Selecciona un producto...</option>
@@ -539,6 +543,19 @@
     function getSelectedColgantes() {
       return Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value);
     }
+    function getSelectedConectores() {
+      return Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
+        const codigo = row.dataset.codigo;
+        const material = materiales.find(m => m.Codigo == codigo);
+        return material ? material.Descripcion : "Desconocido";
+      });
+    }
+    function getSelectedExtras() {
+      return Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
+        const key = row.dataset.key;
+        return extras[key]?.name || "Extra";
+      });
+    }
 
     // Cálculo de precio
     function calculatePrice(config) {
@@ -627,12 +644,34 @@
       const price = calculatePrice(config);
       summary.textContent = `Precio: €${price}`;
 
-      const product = config.product || "producto";
-      const materialsCount = config.materials.length;
-      const colorsCount = config.colors.length;
+      const product = config.product;
+      const materials = getSelectedMaterials();
+      const colgantes = getSelectedColgantes();
+      const conectores = getSelectedConectores();
+      const extrasList = getSelectedExtras();
 
-      preview.innerHTML = `<strong>${product.charAt(0).toUpperCase() + product.slice(1)}</strong><br>
-                           ${materialsCount} material(es), ${colorsCount} color(es)`;
+      if (!product) {
+        preview.innerHTML = `
+          <div class="preview-title">Ningún producto</div>
+          <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
+        `;
+        return;
+      }
+
+      let html = `<div class="preview-title">${product.charAt(0).toUpperCase() + product.slice(1)}</div>`;
+      if (materials.length > 0) html += `<div class="preview-line">Materiales: ${materials.join(", ")}</div>`;
+      if (config.colors.length > 0) {
+        html += `<div class="preview-line">Colores:</div><div class="preview-colors">`;
+        config.colors.forEach(color => {
+          html += `<div class="color-ball" style="background:${color}; width:18px; height:18px;"></div>`;
+        });
+        html += `</div>`;
+      }
+      if (colgantes.length > 0) html += `<div class="preview-line">Colgantes: ${colgantes.join(", ")}</div>`;
+      if (conectores.length > 0) html += `<div class="preview-line">Conectores: ${conectores.length}</div>`;
+      if (extrasList.length > 0) html += `<div class="preview-line">Extras: ${extrasList.join(", ")}</div>`;
+
+      preview.innerHTML = html;
     }
 
     function renderCart() {
