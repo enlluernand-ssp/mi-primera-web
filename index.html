@@ -7,44 +7,10 @@
   <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
-  <!-- Firebase SDK (modular) -->
-  <script type="module">
-    // Importar Firebase modular
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getFirestore, collection, getDoc, setDoc, doc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-
-    // Configuración de Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyCZbhHY9mEr3bBMVZLGxZE4NkGMLSPTcL4",
-      authDomain: "enlluernand-77eb5.firebaseapp.com",
-      projectId: "enlluernand-77eb5",
-      storageBucket: "enlluernand-77eb5.firebasestorage.app",
-      messagingSenderId: "904366283683",
-      appId: "1:904366283683:web:816bf521d4b858a4a25816"
-    };
-
-    // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Hacer disponibles en window para el resto del script
-    window.firebase = {
-      auth,
-      firestore: db,
-      onAuthStateChanged,
-      GoogleAuthProvider,
-      signInWithPopup,
-      signInWithEmailAndPassword,
-      createUserWithEmailAndPassword,
-      signOut,
-      collection,
-      doc,
-      getDoc,
-      setDoc
-    };
-  </script>
+  <!-- Firebase SDK (compat) - Funciona directamente en navegador -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <!-- Librerías para PDF (opcional) -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -94,11 +60,6 @@
     button:hover { background: #005fa3; }
     .summary { background: #eef7ff; padding: 10px; border-radius: 6px; margin-top: 10px; }
 
-    .color-options { display: flex; gap: 10px; margin: 8px 0 12px; }
-    .color-ball { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; cursor: pointer; }
-    .config-container { display: flex; gap: 20px; }
-    .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 18px; min-height: 300px; }
-
     .item-list {
       border: 1px solid #ddd;
       border-radius: 6px;
@@ -118,6 +79,9 @@
     .item-row button {
       background: #ff6666; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer;
     }
+
+    .color-options { display: flex; gap: 10px; margin: 8px 0 12px; }
+    .color-ball { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; cursor: pointer; }
 
     .sidebar { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -2px 0 8px rgba(0,0,0,0.2); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; z-index: 1000; }
     .sidebar.open { right: 0; }
@@ -154,39 +118,83 @@
     <section id="configurador">
       <h2>Configurador de accesorios</h2>
       <div class="config-container">
-        <div class="preview" id="preview"><strong>collar</strong><br>Material: oro</div>
+        <div class="preview" id="preview"><strong>collar personalizado</strong><br>Puedes añadir múltiples elementos</div>
         <div class="controls">
-          <label>Producto</label>
-          <select id="product">
-            <option value="collar">Collar</option>
-            <option value="pulsera">Pulsera</option>
-            <option value="pendientes">Pendientes</option>
-          </select>
 
-          <label>Material</label>
-          <select id="material">
-            <option value="oro">Cadena de oro</option>
-            <option value="plata">Cadena de plata</option>
-            <option value="cordon">Cordón de colores</option>
-          </select>
-
-          <label>Colores disponibles</label>
-          <div class="color-options" id="colorOptions">
-            <div class="color-ball" style="background:red" data-color="rojo"></div>
-            <div class="color-ball" style="background:blue" data-color="azul"></div>
-            <div class="color-ball" style="background:green" data-color="verde"></div>
-            <div class="color-ball" style="background:yellow" data-color="amarillo"></div>
-            <div class="color-ball" style="background:pink" data-color="rosa"></div>
-            <div class="color-ball" style="background:purple" data-color="morado"></div>
+          <!-- Múltiples productos -->
+          <div>
+            <label>Producto</label>
+            <select id="add-product-select">
+              <option value="">Seleccionar producto...</option>
+              <option value="collar">Collar</option>
+              <option value="pulsera">Pulsera</option>
+              <option value="pendientes">Pendientes</option>
+            </select>
+            <button type="button" id="add-product-btn">+ Añadir producto</button>
+            <div class="item-list" id="products-list">
+              <div class="item-row" id="product-template" style="display:none;">
+                <span class="name"></span>
+                <button class="remove">✖</button>
+              </div>
+            </div>
           </div>
 
-          <label>Colgante</label>
-          <select id="colgante">
-            <option value="">Ninguno</option>
-            <option value="corazon">Corazón</option>
-            <option value="estrella">Estrella</option>
-            <option value="nube">Nube</option>
-          </select>
+          <!-- Múltiples materiales -->
+          <div>
+            <label>Material</label>
+            <select id="add-material-select">
+              <option value="">Seleccionar material...</option>
+              <option value="oro">Cadena de oro</option>
+              <option value="plata">Cadena de plata</option>
+              <option value="cordon">Cordón de colores</option>
+            </select>
+            <button type="button" id="add-material-btn">+ Añadir material</button>
+            <div class="item-list" id="materials-list">
+              <div class="item-row" id="material-template" style="display:none;">
+                <span class="name"></span>
+                <button class="remove">✖</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Múltiples colores -->
+          <div>
+            <label>Color</label>
+            <div class="color-options" id="color-options-add">
+              <div class="color-ball" style="background:red" data-color="rojo"></div>
+              <div class="color-ball" style="background:blue" data-color="azul"></div>
+              <div class="color-ball" style="background:green" data-color="verde"></div>
+              <div class="color-ball" style="background:yellow" data-color="amarillo"></div>
+              <div class="color-ball" style="background:pink" data-color="rosa"></div>
+              <div class="color-ball" style="background:purple" data-color="morado"></div>
+            </div>
+            <div id="selected-colors-add"></div>
+            <div class="item-list" id="colors-list">
+              <div class="item-row" id="color-template" style="display:none;">
+                <span class="name"></span>
+                <button class="remove">✖</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Múltiples colgantes -->
+          <div>
+            <label>Colgante</label>
+            <select id="add-colgante-select">
+              <option value="">Seleccionar colgante...</option>
+              <option value="corazon">Corazón</option>
+              <option value="estrella">Estrella</option>
+              <option value="nube">Nube</option>
+              <option value="flor">Flor</option>
+            </select>
+            <button type="button" id="add-colgante-btn">+ Añadir colgante</button>
+            <div class="item-list" id="colgantes-list">
+              <div class="item-row" id="colgante-template" style="display:none;">
+                <span class="name"></span>
+                <button class="remove">✖</button>
+              </div>
+            </div>
+          </div>
 
           <!-- Conectores múltiples -->
           <div>
@@ -231,8 +239,7 @@
 
           <div class="summary" id="summary">Precio: €0</div>
 
-          <!-- Botón para añadir el artículo completo a la cesta -->
-          <button id="addProductToCart">+ Añadir artículo</button>
+          <button id="addToCart">Añadir a la cesta</button>
           <button id="payNow">Pagar ahora</button>
         </div>
       </div>
@@ -259,9 +266,24 @@
     <button id="pay">Pagar</button>
   </div>
 
-  <script type="module">
-    // Importar firebase desde el módulo inicializado
-    const { auth, firestore: db } = window.firebase;
+  <script>
+    // Inicializar EmailJS
+    (function(){ emailjs.init("QySTAkWHd-G0OkzSS"); })();
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZbhHY9mEr3bBMVZLGxZE4NkGMLSPTcL4",
+      authDomain: "enlluernand-77eb5.firebaseapp.com",
+      projectId: "enlluernand-77eb5",
+      storageBucket: "enlluernand-77eb5.firebasestorage.app",
+      messagingSenderId: "904366283683",
+      appId: "1:904366283683:web:816bf521d4b858a4a25816"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
     // Datos de tu Excel (solo conectores)
     const materiales = [
@@ -293,7 +315,7 @@
 
     // Variables
     let cart = [];
-    let selectedColor = "";
+    let selectedColors = []; // Múltiples colores
     let userDiscountCode = null;
     let userDisplayName = null;
 
@@ -398,7 +420,7 @@
       } else {
         const opcion = confirm("¿Quieres iniciar sesión con Google?\nAceptar = Google, Cancelar = Correo y contraseña");
         if (opcion) {
-          const provider = new firebase.GoogleAuthProvider();
+          const provider = new firebase.auth.GoogleAuthProvider();
           auth.signInWithPopup(provider).catch(error => {
             alert("Error al iniciar con Google: " + error.message);
           });
@@ -438,93 +460,126 @@
       });
     }
 
-    // Añadir conector
-    document.getElementById("add-conector-btn").addEventListener("click", () => {
-      const select = document.getElementById("add-conector-select");
-      const codigo = select.value;
-      if (!codigo) return;
-      const material = materiales.find(m => m.Codigo == codigo);
-      if (!material) return;
+    // Añadir producto
+    document.getElementById("add-product-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-product-select");
+      const value = select.value;
+      if (!value) return;
+      const name = select.options[select.selectedIndex].text;
 
-      const list = document.getElementById("conectores-list");
+      const list = document.getElementById("products-list");
       const row = document.createElement("div");
       row.className = "item-row";
-      row.dataset.codigo = codigo;
-      row.innerHTML = `
-        <span class="name">${material.Descripcion}</span>
-        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
-        <button class="remove">✖</button>
-      `;
+      row.dataset.value = value;
+      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
       list.appendChild(row);
       select.value = "";
       renderSummary();
     });
 
-    // Añadir extra
-    document.getElementById("add-extra-btn").addEventListener("click", () => {
-      const select = document.getElementById("add-extra-select");
-      const key = select.value;
-      if (!key) return;
-      const extra = extras[key];
-      if (!extra) return;
+    // Añadir material
+    document.getElementById("add-material-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-material-select");
+      const value = select.value;
+      if (!value) return;
+      const name = select.options[select.selectedIndex].text;
 
-      const list = document.getElementById("extras-list");
+      const list = document.getElementById("materials-list");
       const row = document.createElement("div");
       row.className = "item-row";
-      row.dataset.key = key;
-      row.innerHTML = `
-        <span class="name">${extra.name}</span>
-        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
-        <button class="remove">✖</button>
-      `;
+      row.dataset.value = value;
+      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
       list.appendChild(row);
       select.value = "";
       renderSummary();
+    });
+
+    // Añadir colgante
+    document.getElementById("add-colgante-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-colgante-select");
+      const value = select.value;
+      if (!value) return;
+      const name = select.options[select.selectedIndex].text;
+
+      const list = document.getElementById("colgantes-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.value = value;
+      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Seleccionar color
+    document.getElementById("color-options-add").addEventListener("click", (e) => {
+      if (e.target.classList.contains("color-ball")) {
+        const color = e.target.dataset-color;
+        if (!selectedColors.includes(color)) {
+          selectedColors.push(color);
+
+          const list = document.getElementById("colors-list");
+          const row = document.createElement("div");
+          row.className = "item-row";
+          row.dataset.color = color;
+          row.innerHTML = `<span class="name">Color: ${color}</span><button class="remove">✖</button>`;
+          list.appendChild(row);
+          renderSummary();
+        }
+      }
     });
 
     // Eliminar elemento
+    document.getElementById("products-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
+    document.getElementById("materials-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
+    document.getElementById("colors-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) {
+        const color = e.target.closest(".item-row").dataset.color;
+        selectedColors = selectedColors.filter(c => c !== color);
+        e.target.closest(".item-row").remove();
+        renderSummary();
+      }
+    });
+    document.getElementById("colgantes-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
     document.getElementById("conectores-list").addEventListener("click", (e) => {
-      if (e.target.classList.contains("remove")) {
-        e.target.closest(".item-row").remove();
-        renderSummary();
-      }
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
     });
-
     document.getElementById("extras-list").addEventListener("click", (e) => {
-      if (e.target.classList.contains("remove")) {
-        e.target.closest(".item-row").remove();
-        renderSummary();
-      }
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
     });
 
-    // Obtener conectores seleccionados
-    function getConectores() {
-      const rows = document.querySelectorAll("#conectores-list .item-row");
-      return Array.from(rows).map(row => {
-        const codigo = row.dataset.codigo;
-        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
-        return { codigo, cantidad };
-      });
+    // Obtener elementos seleccionados
+    function getSelectedProducts() {
+      return Array.from(document.querySelectorAll("#products-list .item-row")).map(r => r.dataset.value);
     }
-
-    // Obtener extras seleccionados
-    function getExtras() {
-      const rows = document.querySelectorAll("#extras-list .item-row");
-      return Array.from(rows).map(row => {
-        const key = row.dataset.key;
-        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
-        return { key, cantidad };
-      });
+    function getSelectedMaterials() {
+      return Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
+    }
+    function getSelectedColgantes() {
+      return Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value);
     }
 
     // Cálculo de precio
     function calculatePrice(config) {
       let price = 20;
-      if (config.material === "oro") price += 30;
-      if (config.material === "plata") price += 15;
+      const materials = getSelectedMaterials();
+      price += materials.filter(m => m === "oro").length * 30;
+      price += materials.filter(m => m === "plata").length * 15;
+      price += materials.filter(m => m === "cordon").length * 10;
 
       // Conectores
-      getConectores().forEach(item => {
+      const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
+        const codigo = row.dataset.codigo;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { codigo, cantidad };
+      });
+      conectores.forEach(item => {
         const material = materiales.find(m => m.Codigo == item.codigo);
         if (material) {
           const precioNum = parseFloat(material.Precio.replace(",", "."));
@@ -533,7 +588,12 @@
       });
 
       // Extras
-      getExtras().forEach(item => {
+      const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
+        const key = row.dataset.key;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { key, cantidad };
+      });
+      extrasList.forEach(item => {
         const extra = extras[item.key];
         if (extra) {
           price += extra.price * item.cantidad;
@@ -570,12 +630,18 @@
 
     function getConfig() {
       return {
-        product: document.getElementById("product").value,
-        material: document.getElementById("material").value,
-        color: selectedColor,
-        colgante: document.getElementById("colgante").value,
-        extras: getExtras(),
-        conectores: getConectores(),
+        products: getSelectedProducts(),
+        materials: getSelectedMaterials(),
+        colors: selectedColors,
+        colgantes: getSelectedColgantes(),
+        conectores: Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => ({
+          codigo: row.dataset.codigo,
+          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
+        })),
+        extras: Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => ({
+          key: row.dataset.key,
+          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
+        })),
         discount: document.getElementById("discount").value,
         quantity: parseInt(document.getElementById("quantity").value) || 1
       };
@@ -585,9 +651,70 @@
       const config = getConfig();
       const price = calculatePrice(config);
       summary.textContent = `Precio: €${price}`;
-      preview.innerHTML = `<strong>${config.product}</strong><br>Material: ${config.material}`;
+      preview.innerHTML = `<strong>Collar personalizado</strong><br>${getSelectedMaterials().length} materiales, ${selectedColors.length} colores`;
     }
 
     function renderCart() {
       cartItems.innerHTML = "";
-   
+      let total = 0;
+      cart.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "cesta-item";
+        div.innerHTML = `
+          <strong>${item.quantity}x Collar personalizado</strong><br>
+          Materiales: ${item.materials.join(", ")}<br>
+          Colores: ${item.colors.join(", ")}<br>
+          Colgantes: ${item.colgantes.join(", ")}<br>
+          Precio: €${item.price}
+          <hr>
+        `;
+        cartItems.appendChild(div);
+        total += item.price;
+      });
+      cartSummary.textContent = `Total: €${total}`;
+      cartBtn.textContent = `🛒 Cesta (${cart.length})`;
+    }
+
+    // Añadir a la cesta
+    document.getElementById("addToCart").addEventListener("click", () => {
+      const config = getConfig();
+      const price = calculatePrice(config);
+      cart.push({ ...config, price });
+      renderCart();
+      alert("✅ Artículo añadido a la cesta");
+    });
+
+    // Pagar
+    document.getElementById("pay").addEventListener("click", () => {
+      if (cart.length === 0) {
+        alert("Tu cesta está vacía");
+        return;
+      }
+      alert("✅ Pago procesado. Gracias por tu compra.");
+      cart = [];
+      renderCart();
+      document.getElementById("cartSidebar").classList.remove("open");
+    });
+
+    document.getElementById("payNow").addEventListener("click", () => {
+      const config = getConfig();
+      config.price = calculatePrice(config);
+      alert(`✅ Pago inmediato procesado - Total: €${config.price}`);
+    });
+
+    document.getElementById("openCart").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.add("open");
+    });
+
+    document.getElementById("closeCart").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.remove("open");
+    });
+
+    // Inicializar
+    window.onload = function() {
+      llenarConectores();
+      renderSummary();
+    };
+  </script>
+</body>
+</html>
