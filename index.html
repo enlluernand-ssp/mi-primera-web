@@ -48,17 +48,73 @@
     .cart-btn { background: #0077cc; color: white; border: none; }
     .cart-btn:hover { background: #005fa3; }
 
-    .main-container { display: flex; gap: 20px; max-width: 1400px; margin: 20px auto; padding: 0 20px; }
-    section { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 20px; }
-    #configurador { flex: 2; }
-    #catalogo { flex: 1; }
+    /* Diseño de 3 columnas: 1/3 cada una */
+    .main-container {
+      display: flex;
+      gap: 20px;
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
 
-    h2 { border-bottom: 2px solid #0077cc; padding-bottom: 5px; }
-    label { display: block; margin: 8px 0 4px; font-weight: bold; }
-    select, input[type="number"], input[type="text"] { width: 100%; padding: 6px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #0077cc; color: #fff; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; margin: 5px 5px 0 0; }
-    button:hover { background: #005fa3; }
-    .summary { background: #eef7ff; padding: 10px; border-radius: 6px; margin-top: 10px; }
+    #preview-section {
+      flex: 1; /* 1/3 */
+      min-width: 0;
+    }
+
+    #configurador {
+      flex: 1; /* 1/3 */
+      min-width: 0;
+    }
+
+    #catalogo {
+      flex: 1; /* 1/3 */
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+
+    h2 {
+      border-bottom: 2px solid #0077cc;
+      padding-bottom: 5px;
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 4px;
+      font-weight: bold;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #0077cc;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px 5px 0 0;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .summary {
+      background: #eef7ff;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
 
     .item-list {
       border: 1px solid #ddd;
@@ -77,24 +133,92 @@
     }
 
     .item-row button {
-      background: #ff6666; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer;
+      background: #ff6666;
+      color: white;
+      border: none;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
     }
 
-    .color-options { display: flex; gap: 10px; margin: 8px 0 12px; }
-    .color-ball { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; cursor: pointer; }
+    .color-options {
+      display: flex;
+      gap: 10px;
+      margin: 8px 0 12px;
+    }
 
-    .config-container { display: flex; gap: 20px; }
-    .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 16px; min-height: 300px; padding: 15px; text-align: center; }
+    .color-ball {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
 
-    .preview-title { font-size: 1.4em; font-weight: bold; color: #0077cc; margin: 0 0 10px; }
-    .preview-line { font-size: 0.95em; color: #555; margin: 3px 0; }
-    .preview-colors { display: flex; gap: 6px; margin: 8px 0; justify-content: center; }
+    /* Vista previa */
+    .preview {
+      background: #f9f9f9;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-size: 16px;
+      min-height: 400px;
+      padding: 15px;
+      text-align: center;
+    }
 
-    .sidebar { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -2px 0 8px rgba(0,0,0,0.2); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; z-index: 1000; }
-    .sidebar.open { right: 0; }
-    .sidebar h2 { margin-top: 0; }
-    .cesta-item { border-bottom: 1px solid #ddd; padding: 10px 0; }
-    .close-btn { background: #ccc; color: black; align-self: flex-end; margin-bottom: 10px; }
+    .preview-title {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #0077cc;
+      margin: 0 0 10px;
+    }
+
+    .preview-line {
+      font-size: 0.95em;
+      color: #555;
+      margin: 3px 0;
+    }
+
+    .preview-colors {
+      display: flex;
+      gap: 6px;
+      margin: 8px 0;
+      justify-content: center;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 350px;
+      height: 100%;
+      background: #fff;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+      transition: right 0.3s ease;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+    }
+
+    .sidebar.open {
+      right: 0;
+    }
+
+    .cesta-item {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+
+    .close-btn {
+      background: #ccc;
+      color: black;
+      align-self: flex-end;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -120,143 +244,148 @@
     </div>
   </div>
 
+  <!-- Contenedor principal: 3 columnas -->
   <div class="main-container">
-    <!-- Configurador -->
-    <section id="configurador">
-      <h2>Configurador de accesorios</h2>
-      <div class="config-container">
-        <!-- Vista previa -->
-        <div class="preview" id="preview">
-          <div class="preview-title">Ningún producto</div>
-          <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
-        </div>
-
-        <!-- Controles -->
-        <div class="controls">
-          <!-- Producto (único) -->
-          <label>Producto</label>
-          <select id="product">
-            <option value="">Selecciona un producto...</option>
-            <option value="collar">Collar</option>
-            <option value="pulsera">Pulsera</option>
-            <option value="pendientes">Pendientes</option>
-          </select>
-
-          <!-- Múltiples materiales -->
-          <div>
-            <label>Material</label>
-            <select id="add-material-select">
-              <option value="">Seleccionar material...</option>
-              <option value="oro">Cadena de oro</option>
-              <option value="plata">Cadena de plata</option>
-              <option value="cordon">Cordón de colores</option>
-            </select>
-            <button type="button" id="add-material-btn">+ Añadir material</button>
-            <div class="item-list" id="materials-list">
-              <div class="item-row" id="material-template" style="display:none;">
-                <span class="name"></span>
-                <button class="remove">✖</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Múltiples colores -->
-          <div>
-            <label>Color</label>
-            <div class="color-options" id="color-options-add">
-              <div class="color-ball" style="background:red" data-color="rojo"></div>
-              <div class="color-ball" style="background:blue" data-color="azul"></div>
-              <div class="color-ball" style="background:green" data-color="verde"></div>
-              <div class="color-ball" style="background:yellow" data-color="amarillo"></div>
-              <div class="color-ball" style="background:pink" data-color="rosa"></div>
-              <div class="color-ball" style="background:purple" data-color="morado"></div>
-            </div>
-            <div class="item-list" id="colors-list">
-              <div class="item-row" id="color-template" style="display:none;">
-                <span class="name"></span>
-                <button class="remove">✖</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Múltiples colgantes -->
-          <div>
-            <label>Colgante</label>
-            <select id="add-colgante-select">
-              <option value="">Seleccionar colgante...</option>
-              <option value="corazon">Corazón</option>
-              <option value="estrella">Estrella</option>
-              <option value="nube">Nube</option>
-              <option value="flor">Flor</option>
-            </select>
-            <button type="button" id="add-colgante-btn">+ Añadir colgante</button>
-            <div class="item-list" id="colgantes-list">
-              <div class="item-row" id="colgante-template" style="display:none;">
-                <span class="name"></span>
-                <button class="remove">✖</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Conectores múltiples -->
-          <div>
-            <label>Conectores adicionales</label>
-            <div class="item-list" id="conectores-list">
-              <div class="item-row" id="conector-template" style="display:none;">
-                <span class="name"></span>
-                <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
-                <button class="remove">✖</button>
-              </div>
-            </div>
-            <select id="add-conector-select">
-              <option value="">Seleccionar conector...</option>
-            </select>
-            <button type="button" id="add-conector-btn">+ Añadir conector</button>
-          </div>
-
-          <!-- Extras múltiples -->
-          <div>
-            <label>Extras</label>
-            <div class="item-list" id="extras-list">
-              <div class="item-row" id="extra-template" style="display:none;">
-                <span class="name"></span>
-                <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
-                <button class="remove">✖</button>
-              </div>
-            </div>
-            <select id="add-extra-select">
-              <option value="">Seleccionar extra...</option>
-              <option value="gift">Estuche para regalo (+5€)</option>
-              <option value="wrap">Envoltorio para regalo (+3€)</option>
-              <option value="urgent">Fabricación urgente (+10€)</option>
-            </select>
-            <button type="button" id="add-extra-btn">+ Añadir extra</button>
-          </div>
-
-          <label>Código de descuento</label>
-          <input type="text" id="discount" placeholder="Introduce tu código">
-
-          <label>Cantidad</label>
-          <input type="number" id="quantity" value="1" min="1">
-
-          <div class="summary" id="summary">Precio: €0</div>
-
-          <button id="addToCart">Añadir a la cesta</button>
-          <button id="payNow">Pagar ahora</button>
-        </div>
+    
+    <!-- 1/3: Vista previa -->
+    <section id="preview-section">
+      <h2>Vista Previa</h2>
+      <div class="preview" id="preview">
+        <div class="preview-title">Ningún producto</div>
+        <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
       </div>
     </section>
 
-    <!-- Catálogo -->
+    <!-- 2/3: Configurador -->
+    <section id="configurador">
+      <h2>Configurador de accesorios</h2>
+      <div class="controls">
+        <!-- Producto (único) -->
+        <label>Producto</label>
+        <select id="product">
+          <option value="">Selecciona un producto...</option>
+          <option value="collar">Collar</option>
+          <option value="pulsera">Pulsera</option>
+          <option value="pendientes">Pendientes</option>
+        </select>
+
+        <!-- Múltiples materiales -->
+        <div>
+          <label>Material</label>
+          <select id="add-material-select">
+            <option value="">Seleccionar material...</option>
+            <option value="oro">Cadena de oro</option>
+            <option value="plata">Cadena de plata</option>
+            <option value="cordon">Cordón de colores</option>
+          </select>
+          <button type="button" id="add-material-btn">+ Añadir material</button>
+          <div class="item-list" id="materials-list">
+            <div class="item-row" id="material-template" style="display:none;">
+              <span class="name"></span>
+              <button class="remove">✖</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Múltiples colores -->
+        <div>
+          <label>Color</label>
+          <div class="color-options" id="color-options-add">
+            <div class="color-ball" style="background:red" data-color="rojo"></div>
+            <div class="color-ball" style="background:blue" data-color="azul"></div>
+            <div class="color-ball" style="background:green" data-color="verde"></div>
+            <div class="color-ball" style="background:yellow" data-color="amarillo"></div>
+            <div class="color-ball" style="background:pink" data-color="rosa"></div>
+            <div class="color-ball" style="background:purple" data-color="morado"></div>
+          </div>
+          <div class="item-list" id="colors-list">
+            <div class="item-row" id="color-template" style="display:none;">
+              <span class="name"></span>
+              <button class="remove">✖</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Múltiples colgantes -->
+        <div>
+          <label>Colgante</label>
+          <select id="add-colgante-select">
+            <option value="">Seleccionar colgante...</option>
+            <option value="corazon">Corazón</option>
+            <option value="estrella">Estrella</option>
+            <option value="nube">Nube</option>
+            <option value="flor">Flor</option>
+          </select>
+          <button type="button" id="add-colgante-btn">+ Añadir colgante</button>
+          <div class="item-list" id="colgantes-list">
+            <div class="item-row" id="colgante-template" style="display:none;">
+              <span class="name"></span>
+              <button class="remove">✖</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conectores múltiples -->
+        <div>
+          <label>Conectores adicionales</label>
+          <div class="item-list" id="conectores-list">
+            <div class="item-row" id="conector-template" style="display:none;">
+              <span class="name"></span>
+              <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+              <button class="remove">✖</button>
+            </div>
+          </div>
+          <select id="add-conector-select">
+            <option value="">Seleccionar conector...</option>
+          </select>
+          <button type="button" id="add-conector-btn">+ Añadir conector</button>
+        </div>
+
+        <!-- Extras múltiples -->
+        <div>
+          <label>Extras</label>
+          <div class="item-list" id="extras-list">
+            <div class="item-row" id="extra-template" style="display:none;">
+              <span class="name"></span>
+              <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+              <button class="remove">✖</button>
+            </div>
+          </div>
+          <select id="add-extra-select">
+            <option value="">Seleccionar extra...</option>
+            <option value="gift">Estuche para regalo (+5€)</option>
+            <option value="wrap">Envoltorio para regalo (+3€)</option>
+            <option value="urgent">Fabricación urgente (+10€)</option>
+          </select>
+          <button type="button" id="add-extra-btn">+ Añadir extra</button>
+        </div>
+
+        <label>Código de descuento</label>
+        <input type="text" id="discount" placeholder="Introduce tu código">
+
+        <label>Cantidad</label>
+        <input type="number" id="quantity" value="1" min="1">
+
+        <div class="summary" id="summary">Precio: €0</div>
+
+        <button id="addToCart">Añadir a la cesta</button>
+        <button id="payNow">Pagar ahora</button>
+      </div>
+    </section>
+
+    <!-- 3/3: Catálogo -->
     <section id="catalogo">
       <h2>Catálogo</h2>
-      <h3>Collares</h3>
-      <img src="https://via.placeholder.com/200?text=Collar+1">
-      <h3>Pendientes</h3>
-      <img src="https://via.placeholder.com/200?text=Pendiente+1">
-      <h3>Pulseras</h3>
-      <img src="https://via.placeholder.com/200?text=Pulsera+1">
+      <img src="https://via.placeholder.com/150?text=Collar+1" alt="Collar">
+      <p>Collar de oro con conector doble</p>
+
+      <img src="https://via.placeholder.com/150?text=Pulsera+1" alt="Pulsera">
+      <p>Pulsera de plata con estrella</p>
+
+      <img src="https://via.placeholder.com/150?text=Pendientes+1" alt="Pendientes">
+      <p>Pendientes con flor de resina</p>
     </section>
+
   </div>
 
   <!-- Sidebar de la Cesta -->
@@ -317,7 +446,7 @@
 
     // Variables
     let cart = [];
-    let selectedColors = []; // Múltiples colores
+    let selectedColors = [];
     let userDiscountCode = null;
     let userDisplayName = null;
 
@@ -387,7 +516,7 @@
             fechaRegistro: new Date(),
             codigoDescuento: userDiscountCode,
             usado: false,
-            expira: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h después
+            expira: new Date(Date.now() + 24 * 60 * 60 * 1000)
           });
 
           mostrarBienvenida(userDisplayName);
