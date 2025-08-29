@@ -581,6 +581,26 @@
     const totalAmount = document.getElementById("totalAmount");
     const confirmPayment = document.getElementById("confirmPayment");
 
+    // Datos de tu Excel (conectores)
+    const materiales = [
+      {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460"},
+      {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300"},
+      {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348"},
+      {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348"},
+      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015"}
+    ];
+
+    // Extras
+    const extras = {
+      gift: { name: "Estuche para regalo", price: 5 },
+      wrap: { name: "Envoltorio para regalo", price: 3 },
+      urgent: { name: "Fabricación urgente", price: 10 }
+    };
+
+    // Variables
+    let cart = [];
+    let selectedColors = [];
+
     // Mostrar overlay si falta información
     function checkUserData(user) {
       if (!user) return;
@@ -611,7 +631,6 @@
       userData = { name, phone, address, postal, city, province, country };
       dataOverlay.style.display = "none";
 
-      // Guardar en Firebase
       if (auth.currentUser) {
         db.collection("usuarios").doc(auth.currentUser.uid).set({
           direccion: userData,
@@ -648,8 +667,241 @@
       }
     });
 
-    // Cálculo de precio y funciones del configurador (igual que antes)
-    // ... (código de materiales, colores, etc.)
+    // Llenar conectores
+    function llenarConectores() {
+      const select = document.getElementById("add-conector-select");
+      select.innerHTML = '<option value="">Seleccionar conector...</option>';
+      materiales.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.Codigo;
+        option.textContent = item.Descripcion; // ✅ Precio oculto
+        select.appendChild(option);
+      });
+    }
+
+    // Añadir material
+    document.getElementById("add-material-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-material-select");
+      const value = select.value;
+      if (!value) return;
+      const name = select.options[select.selectedIndex].text;
+      const list = document.getElementById("materials-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.value = value;
+      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Añadir colgante
+    document.getElementById("add-colgante-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-colgante-select");
+      const value = select.value;
+      if (!value) return;
+      const name = select.options[select.selectedIndex].text;
+      const list = document.getElementById("colgantes-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.value = value;
+      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Seleccionar color
+    document.getElementById("color-options-add").addEventListener("click", (e) => {
+      if (e.target.classList.contains("color-ball")) {
+        const color = e.target.dataset.color;
+        if (!selectedColors.includes(color)) {
+          selectedColors.push(color);
+          const list = document.getElementById("colors-list");
+          const row = document.createElement("div");
+          row.className = "item-row";
+          row.dataset.color = color;
+          row.innerHTML = `<span class="name">Color: ${color}</span><button class="remove">✖</button>`;
+          list.appendChild(row);
+          renderSummary();
+        }
+      }
+    });
+
+    // Añadir conector
+    document.getElementById("add-conector-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-conector-select");
+      const codigo = select.value;
+      if (!codigo) return;
+      const material = materiales.find(m => m.Codigo == codigo);
+      if (!material) return;
+      const list = document.getElementById("conectores-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.codigo = codigo;
+      row.innerHTML = `<span class="name">${material.Descripcion}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Añadir extra
+    document.getElementById("add-extra-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-extra-select");
+      const key = select.value;
+      if (!key) return;
+      const extra = extras[key];
+      if (!extra) return;
+      const list = document.getElementById("extras-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.key = key;
+      row.innerHTML = `<span class="name">${extra.name}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Eliminar elementos
+    document.getElementById("materials-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
+    document.getElementById("colors-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) {
+        const color = e.target.closest(".item-row").dataset.color;
+        selectedColors = selectedColors.filter(c => c !== color);
+        e.target.closest(".item-row").remove();
+        renderSummary();
+      }
+    });
+    document.getElementById("colgantes-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
+    document.getElementById("conectores-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
+    document.getElementById("extras-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
+
+    // Cálculo de precio
+    function calculatePrice(config) {
+      let price = 20;
+      const materials = Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
+      price += materials.filter(m => m === "oro").length * 30;
+      price += materials.filter(m => m === "plata").length * 15;
+      price += materials.filter(m => m === "cordon").length * 10;
+
+      // Conectores
+      const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
+        const codigo = row.dataset.codigo;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { codigo, cantidad };
+      });
+      conectores.forEach(item => {
+        const material = materiales.find(m => m.Codigo == item.codigo);
+        if (material) {
+          const precioNum = parseFloat(material.Precio.replace(",", "."));
+          price += precioNum * item.cantidad;
+        }
+      });
+
+      // Extras
+      const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
+        const key = row.dataset.key;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { key, cantidad };
+      });
+      extrasList.forEach(item => {
+        const extra = extras[item.key];
+        if (extra) {
+          price += extra.price * item.cantidad;
+        }
+      });
+
+      price *= config.quantity;
+      return Math.round(price * 100) / 100;
+    }
+
+    function getConfig() {
+      return {
+        product: document.getElementById("product").value,
+        materials: Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value),
+        colors: selectedColors,
+        colgantes: Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value),
+        conectores: Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => ({
+          codigo: row.dataset.codigo,
+          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
+        })),
+        extras: Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => ({
+          key: row.dataset.key,
+          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
+        })),
+        discount: document.getElementById("discount").value,
+        quantity: parseInt(document.getElementById("quantity").value) || 1
+      };
+    }
+
+    function renderSummary() {
+      const config = getConfig();
+      const price = calculatePrice(config);
+      summary.textContent = `Precio: €${price}`;
+
+      const product = config.product;
+      if (!product) {
+        preview.innerHTML = `
+          <div class="preview-title">Ningún producto</div>
+          <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
+        `;
+        return;
+      }
+
+      let html = `<div class="preview-title">${product.charAt(0).toUpperCase() + product.slice(1)}</div>`;
+      const materials = config.materials;
+      if (materials.length > 0) html += `<div class="preview-line">Materiales: ${materials.join(", ")}</div>`;
+      if (config.colors.length > 0) {
+        html += `<div class="preview-line">Colores:</div><div class="preview-colors">`;
+        config.colors.forEach(color => {
+          html += `<div class="color-ball" style="background:${color}; width:18px; height:18px;"></div>`;
+        });
+        html += `</div>`;
+      }
+      preview.innerHTML = html;
+    }
+
+    function renderCart() {
+      cartItems.innerHTML = "";
+      let total = 0;
+      cart.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "cesta-item";
+        div.innerHTML = `
+          <strong>${item.quantity}x ${item.product}</strong><br>
+          Materiales: ${item.materials.join(", ")}<br>
+          Colores: ${item.colors.join(", ")}<br>
+          Precio: €${item.price}
+          <hr>
+        `;
+        cartItems.appendChild(div);
+        total += item.price;
+      });
+      cartSummary.textContent = `Total: €${total}`;
+      cartBtn.textContent = `🛒 Cesta (${cart.length})`;
+    }
+
+    // Añadir a la cesta
+    document.getElementById("addToCart").addEventListener("click", () => {
+      const config = getConfig();
+      const product = config.product;
+      if (!product) {
+        alert("⚠️ Por favor, selecciona un producto");
+        return;
+      }
+      const price = calculatePrice(config);
+      cart.push({ ...config, price });
+      renderCart();
+      alert("✅ Artículo añadido a la cesta");
+    });
 
     // Mostrar modal de Bizum
     function showBizumModal(order) {
@@ -669,6 +921,40 @@
         alert(`✅ Gracias por tu compra, ${userData.name}!\nPronto recibirás la factura por email.`);
       };
     }
+
+    // Pagar ahora
+    document.getElementById("payNow").addEventListener("click", () => {
+      const config = getConfig();
+      const product = config.product;
+      if (!product) {
+        alert("⚠️ Selecciona un producto antes de pagar");
+        return;
+      }
+      if (!userData) {
+        alert("⚠️ Completa tus datos de envío primero");
+        dataOverlay.style.display = "flex";
+        return;
+      }
+      const price = calculatePrice(config);
+      const order = { items: [ { ...config, price } ], total: price, type: "individual" };
+      showBizumModal(order);
+    });
+
+    // Proceder al pago
+    document.getElementById("proceedToPayment").addEventListener("click", () => {
+      if (cart.length === 0) {
+        alert("Tu cesta está vacía");
+        return;
+      }
+      if (!userData) {
+        alert("⚠️ Completa tus datos de envío primero");
+        dataOverlay.style.display = "flex";
+        return;
+      }
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const order = { items: cart, total, type: "cesta" };
+      showBizumModal(order);
+    });
 
     // Enviar correos
     function sendConfirmationEmails(order, data) {
@@ -722,12 +1008,15 @@
         .catch(err => console.error("❌ Error al enviar email a propietaria:", err));
     }
 
+    // Cerrar cesta
+    document.getElementById("closeCart").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.remove("open");
+    });
+
     // Inicializar
     window.onload = function() {
-      // Simular carga inicial
-      setTimeout(() => {
-        // Aquí irían funciones como llenarConectores(), renderSummary(), etc.
-      }, 100);
+      llenarConectores();
+      renderSummary();
     };
   </script>
 </body>
