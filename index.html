@@ -58,17 +58,17 @@
     }
 
     #preview-section {
-      flex: 1; /* 1/3 */
+      flex: 1;
       min-width: 0;
     }
 
     #configurador {
-      flex: 1; /* 1/3 */
+      flex: 1;
       min-width: 0;
     }
 
     #catalogo {
-      flex: 1; /* 1/3 */
+      flex: 1;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -121,7 +121,7 @@
       border-radius: 6px;
       padding: 10px;
       margin-bottom: 10px;
-      max-height: 200px;
+      max-height: 150px;
       overflow-y: auto;
     }
 
@@ -187,6 +187,34 @@
       gap: 6px;
       margin: 8px 0;
       justify-content: center;
+    }
+
+    /* Catálogo clickeable */
+    .catalog-item {
+      cursor: pointer;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .catalog-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .catalog-item img {
+      width: 100%;
+      max-width: 120px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .catalog-item p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #333;
     }
 
     .sidebar {
@@ -306,6 +334,22 @@
           </div>
         </div>
 
+        <!-- Conectores múltiples -->
+        <div>
+          <label>Conectores adicionales</label>
+          <div class="item-list" id="conectores-list">
+            <div class="item-row" id="conector-template" style="display:none;">
+              <span class="name"></span>
+              <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+              <button class="remove">✖</button>
+            </div>
+          </div>
+          <select id="add-conector-select">
+            <option value="">Seleccionar conector...</option>
+          </select>
+          <button type="button" id="add-conector-btn">+ Añadir conector</button>
+        </div>
+
         <!-- Múltiples colgantes -->
         <div>
           <label>Colgante</label>
@@ -323,22 +367,6 @@
               <button class="remove">✖</button>
             </div>
           </div>
-        </div>
-
-        <!-- Conectores múltiples -->
-        <div>
-          <label>Conectores adicionales</label>
-          <div class="item-list" id="conectores-list">
-            <div class="item-row" id="conector-template" style="display:none;">
-              <span class="name"></span>
-              <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
-              <button class="remove">✖</button>
-            </div>
-          </div>
-          <select id="add-conector-select">
-            <option value="">Seleccionar conector...</option>
-          </select>
-          <button type="button" id="add-conector-btn">+ Añadir conector</button>
         </div>
 
         <!-- Extras múltiples -->
@@ -373,17 +401,30 @@
       </div>
     </section>
 
-    <!-- 3/3: Catálogo -->
+    <!-- 3/3: Catálogo Clickeable -->
     <section id="catalogo">
       <h2>Catálogo</h2>
-      <img src="https://via.placeholder.com/150?text=Collar+1" alt="Collar">
-      <p>Collar de oro con conector doble</p>
 
-      <img src="https://via.placeholder.com/150?text=Pulsera+1" alt="Pulsera">
-      <p>Pulsera de plata con estrella</p>
+      <!-- Collar Estrella -->
+      <div class="catalog-item" data-product="collar" data-material="oro" data-colgante="estrella" data-color="azul">
+        <img src="https://via.placeholder.com/120?text=Collar+Estrella" alt="Collar con estrella">
+        <p><strong>Collar Estrella</strong></p>
+        <p>Oro, azul, con estrella brillante</p>
+      </div>
 
-      <img src="https://via.placeholder.com/150?text=Pendientes+1" alt="Pendientes">
-      <p>Pendientes con flor de resina</p>
+      <!-- Pulsera Corazón -->
+      <div class="catalog-item" data-product="pulsera" data-material="plata" data-colgante="corazon" data-color="rojo">
+        <img src="https://via.placeholder.com/120?text=Pulsera+Corazón" alt="Pulsera con corazón">
+        <p><strong>Pulsera Corazón</strong></p>
+        <p>Plata, rojo, con corazón</p>
+      </div>
+
+      <!-- Pendientes Nube -->
+      <div class="catalog-item" data-product="pendientes" data-material="oro" data-colgante="nube" data-color="amarillo">
+        <img src="https://via.placeholder.com/120?text=Pendientes+Nube" alt="Pendientes con nube">
+        <p><strong>Pendientes Nube</strong></p>
+        <p>Oro, amarillo, con nube</p>
+      </div>
     </section>
 
   </div>
@@ -665,6 +706,50 @@
       if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
     });
 
+    // Añadir conector
+    document.getElementById("add-conector-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-conector-select");
+      const codigo = select.value;
+      if (!codigo) return;
+      const material = materiales.find(m => m.Codigo == codigo);
+      if (!material) return;
+
+      const list = document.getElementById("conectores-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.codigo = codigo;
+      row.innerHTML = `
+        <span class="name">${material.Descripcion}</span>
+        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+        <button class="remove">✖</button>
+      `;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Añadir extra
+    document.getElementById("add-extra-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-extra-select");
+      const key = select.value;
+      if (!key) return;
+      const extra = extras[key];
+      if (!extra) return;
+
+      const list = document.getElementById("extras-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.key = key;
+      row.innerHTML = `
+        <span class="name">${extra.name}</span>
+        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
+        <button class="remove">✖</button>
+      `;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
     // Obtener elementos seleccionados
     function getSelectedMaterials() {
       return Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
@@ -870,6 +955,34 @@
 
     document.getElementById("closeCart").addEventListener("click", () => {
       document.getElementById("cartSidebar").classList.remove("open");
+    });
+
+    // Catálogo clickeable
+    document.querySelectorAll(".catalog-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const product = item.dataset.product;
+        const material = item.dataset.material;
+        const colgante = item.dataset.colgante;
+        const color = item.dataset.color;
+
+        // Seleccionar producto
+        document.getElementById("product").value = product;
+        
+        // Añadir material
+        document.getElementById("add-material-select").value = material;
+        document.getElementById("add-material-btn").click();
+
+        // Añadir colgante
+        document.getElementById("add-colgante-select").value = colgante;
+        document.getElementById("add-colgante-btn").click();
+
+        // Añadir color
+        const colorBall = document.querySelector(`.color-ball[data-color="${color}"]`);
+        if (colorBall) colorBall.click();
+
+        renderSummary();
+        alert(`✅ Plantilla "${product} con ${colgante}" aplicada`);
+      });
     });
 
     // Inicializar
