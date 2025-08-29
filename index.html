@@ -44,7 +44,7 @@
     .cart-btn { background: #0077cc; color: white; border: none; }
     .cart-btn:hover { background: #005fa3; }
 
-    /* Bloqueo de acceso hasta completar datos */
+    /* Overlay: Datos obligatorios tras registro */
     .blocked-overlay {
       display: none;
       position: fixed;
@@ -247,6 +247,7 @@
       margin-bottom: 10px;
     }
 
+    /* Sidebar de la cesta */
     .sidebar {
       position: fixed;
       top: 0;
@@ -930,6 +931,15 @@
       alert("✅ Artículo añadido a la cesta");
     });
 
+    // Abrir cesta
+    document.getElementById("openCart").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.add("open");
+    });
+
+    document.getElementById("closeCart").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.remove("open");
+    });
+
     // Pagar ahora
     document.getElementById("payNow").addEventListener("click", () => {
       const config = getConfig();
@@ -1034,11 +1044,6 @@
         .then(() => console.log("✅ Email a propietaria enviado"))
         .catch(err => console.error("❌ Error al enviar email a propietaria:", err));
     }
-
-    // Cerrar cesta
-    document.getElementById("closeCart").addEventListener("click", () => {
-      document.getElementById("cartSidebar").classList.remove("open");
-    });
 
     // Inicializar
     window.onload = function() {
