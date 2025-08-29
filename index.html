@@ -12,10 +12,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- Librerías para PDF (opcional) -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #e6f3ff; }
     header {
@@ -229,6 +225,47 @@
       align-self: flex-end;
       margin-bottom: 10px;
     }
+
+    /* Modal de Bizum */
+    .modal-bizum {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .modal-content h2 {
+      color: #0077cc;
+    }
+
+    .modal-content p {
+      font-size: 1.1em;
+      margin: 10px 0;
+    }
+
+    .modal-content .bizum-number {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #0077cc;
+      margin: 10px 0;
+    }
+
+    .modal-content button {
+      margin-top: 15px;
+    }
   </style>
 </head>
 <body>
@@ -251,6 +288,18 @@
       <button onclick="copyCode()" style="background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Copiar código</button>
       <button onclick="useCode()" style="margin-top:10px; background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Usar código</button>
       <button onclick="closeModal()" style="margin-top:10px; background:#ccc; color:black; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Modal de Bizum -->
+  <div class="modal-bizum" id="bizumModal">
+    <div class="modal-content">
+      <h2>💳 Paga por Bizum</h2>
+      <p>Envía el pago al número:</p>
+      <div class="bizum-number">676 99 6</div>
+      <p><strong id="totalAmount">€0</strong></p>
+      <p>Una vez realizado, recibirás la factura por email.</p>
+      <button id="confirmPayment">He realizado el pago</button>
     </div>
   </div>
 
@@ -402,7 +451,7 @@
     <h2>Tu Cesta</h2>
     <div id="cartItems"></div>
     <div class="summary" id="cartSummary">Total: €0</div>
-    <button id="pay">Pagar</button>
+    <button id="proceedToPayment">Proceder al pago</button>
   </div>
 
   <script>
@@ -457,6 +506,7 @@
     let selectedColors = [];
     let userDiscountCode = null;
     let userDisplayName = null;
+    let userPhone = null;
 
     // Elementos del DOM
     const summary = document.getElementById("summary");
@@ -466,6 +516,11 @@
     const preview = document.getElementById("preview");
     const authButton = document.getElementById("authButton");
     const discountInput = document.getElementById("discount");
+
+    // Modales
+    const bizumModal = document.getElementById("bizumModal");
+    const totalAmount = document.getElementById("totalAmount");
+    const confirmPayment = document.getElementById("confirmPayment");
 
     // Generar código de descuento único
     function generarCodigoDescuento() {
@@ -515,23 +570,35 @@
         const doc = await userRef.get();
 
         if (!doc.exists) {
+          // Solicitar nombre y teléfono al registro
+          const nombre = prompt("📝 Nombre completo:", user.displayName || user.email.split("@")[0]);
+          const telefono = prompt("📱 Teléfono (para envíos y Bizum):", "");
+          if (!nombre || !telefono) {
+            alert("⚠️ Necesitamos tu nombre y teléfono para continuar.");
+            auth.signOut();
+            return;
+          }
+
+          userDisplayName = nombre;
+          userPhone = telefono;
           userDiscountCode = generarCodigoDescuento();
-          userDisplayName = user.displayName || user.email.split("@")[0];
 
           await userRef.set({
             email: user.email,
-            nombre: userDisplayName,
+            nombre,
+            telefono,
             fechaRegistro: new Date(),
             codigoDescuento: userDiscountCode,
             usado: false,
             expira: new Date(Date.now() + 24 * 60 * 60 * 1000)
           });
 
-          mostrarBienvenida(userDisplayName);
+          mostrarBienvenida(nombre);
         } else {
           const data = doc.data();
-          userDiscountCode = data.codigoDescuento;
           userDisplayName = data.nombre;
+          userPhone = data.telefono;
+          userDiscountCode = data.codigoDescuento;
 
           if (new Date() > new Date(data.expira)) {
             userDiscountCode = null;
@@ -544,6 +611,7 @@
       } else {
         userDiscountCode = null;
         userDisplayName = null;
+        userPhone = null;
         authButton.textContent = "Iniciar sesión";
       }
       renderSummary();
@@ -605,7 +673,6 @@
       const value = select.value;
       if (!value) return;
       const name = select.options[select.selectedIndex].text;
-
       const list = document.getElementById("materials-list");
       const row = document.createElement("div");
       row.className = "item-row";
@@ -622,7 +689,6 @@
       const value = select.value;
       if (!value) return;
       const name = select.options[select.selectedIndex].text;
-
       const list = document.getElementById("colgantes-list");
       const row = document.createElement("div");
       row.className = "item-row";
@@ -639,7 +705,6 @@
         const color = e.target.dataset.color;
         if (!selectedColors.includes(color)) {
           selectedColors.push(color);
-
           const list = document.getElementById("colors-list");
           const row = document.createElement("div");
           row.className = "item-row";
@@ -680,16 +745,11 @@
       if (!codigo) return;
       const material = materiales.find(m => m.Codigo == codigo);
       if (!material) return;
-
       const list = document.getElementById("conectores-list");
       const row = document.createElement("div");
       row.className = "item-row";
       row.dataset.codigo = codigo;
-      row.innerHTML = `
-        <span class="name">${material.Descripcion}</span>
-        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
-        <button class="remove">✖</button>
-      `;
+      row.innerHTML = `<span class="name">${material.Descripcion}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
       list.appendChild(row);
       select.value = "";
       renderSummary();
@@ -702,41 +762,15 @@
       if (!key) return;
       const extra = extras[key];
       if (!extra) return;
-
       const list = document.getElementById("extras-list");
       const row = document.createElement("div");
       row.className = "item-row";
       row.dataset.key = key;
-      row.innerHTML = `
-        <span class="name">${extra.name}</span>
-        <input type="number" value="1" min="1" class="cantidad" style="width:50px;">
-        <button class="remove">✖</button>
-      `;
+      row.innerHTML = `<span class="name">${extra.name}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
       list.appendChild(row);
       select.value = "";
       renderSummary();
     });
-
-    // Obtener elementos seleccionados
-    function getSelectedMaterials() {
-      return Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
-    }
-    function getSelectedColgantes() {
-      return Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value);
-    }
-    function getSelectedConectores() {
-      return Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
-        const codigo = row.dataset.codigo;
-        const material = materiales.find(m => m.Codigo == codigo);
-        return material ? material.Descripcion : "Desconocido";
-      });
-    }
-    function getSelectedExtras() {
-      return Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
-        const key = row.dataset.key;
-        return extras[key]?.name || "Extra";
-      });
-    }
 
     // Cálculo de precio
     function calculatePrice(config) {
@@ -779,22 +813,6 @@
       if (config.discount && config.discount === "DESCUENTO10") {
         price *= 0.95;
       } else if (config.discount && config.discount === userDiscountCode) {
-        const user = auth.currentUser;
-        if (user) {
-          db.collection("usuarios").doc(user.uid).get().then(doc => {
-            const data = doc.data();
-            if (data.usado) {
-              alert("❌ Este código ya fue usado.");
-              return;
-            }
-            if (new Date() > new Date(data.expira)) {
-              alert("❌ Este código ha expirado.");
-              return;
-            }
-            db.collection("usuarios").doc(user.uid).update({ usado: true });
-            alert("✅ ¡Código de bienvenida aplicado! 5% de descuento.");
-          });
-        }
         price *= 0.95;
       }
 
@@ -820,6 +838,13 @@
       };
     }
 
+    function getSelectedMaterials() {
+      return Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
+    }
+    function getSelectedColgantes() {
+      return Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value);
+    }
+
     function renderSummary() {
       const config = getConfig();
       const price = calculatePrice(config);
@@ -828,8 +853,6 @@
       const product = config.product;
       const materials = getSelectedMaterials();
       const colgantes = getSelectedColgantes();
-      const conectores = getSelectedConectores();
-      const extrasList = getSelectedExtras();
 
       if (!product) {
         preview.innerHTML = `
@@ -849,9 +872,6 @@
         html += `</div>`;
       }
       if (colgantes.length > 0) html += `<div class="preview-line">Colgantes: ${colgantes.join(", ")}</div>`;
-      if (conectores.length > 0) html += `<div class="preview-line">Conectores: ${conectores.length}</div>`;
-      if (extrasList.length > 0) html += `<div class="preview-line">Extras: ${extrasList.join(", ")}</div>`;
-
       preview.innerHTML = html;
     }
 
@@ -890,36 +910,101 @@
       alert("✅ Artículo añadido a la cesta");
     });
 
-    // Pagar
-    document.getElementById("pay").addEventListener("click", () => {
+    // Pagar ahora (único artículo)
+    document.getElementById("payNow").addEventListener("click", () => {
+      const config = getConfig();
+      const product = config.product;
+      if (!product) {
+        alert("⚠️ Selecciona un producto antes de pagar");
+        return;
+      }
+      if (!auth.currentUser) {
+        alert("Debes iniciar sesión para realizar el pago");
+        return;
+      }
+      const price = calculatePrice(config);
+      const order = { items: [ { ...config, price } ], total: price, type: "individual" };
+      showBizumModal(order);
+    });
+
+    // Proceder al pago (cesta)
+    document.getElementById("proceedToPayment").addEventListener("click", () => {
       if (cart.length === 0) {
         alert("Tu cesta está vacía");
         return;
       }
-      alert("✅ Pago procesado. Gracias por tu compra.");
-      cart = [];
-      renderCart();
-      document.getElementById("cartSidebar").classList.remove("open");
-    });
-
-    document.getElementById("payNow").addEventListener("click", () => {
-      const config = getConfig();
-      if (!config.product) {
-        alert("⚠️ Selecciona un producto antes de pagar");
+      if (!auth.currentUser) {
+        alert("Debes iniciar sesión para realizar el pago");
         return;
       }
-      config.price = calculatePrice(config);
-      alert(`✅ Pago inmediato procesado - Total: €${config.price}`);
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const order = { items: cart, total, type: "cesta" };
+      showBizumModal(order);
     });
 
-    document.getElementById("product").addEventListener("change", renderSummary);
-    document.getElementById("quantity").addEventListener("input", renderSummary);
-    document.getElementById("discount").addEventListener("input", renderSummary);
+    // Mostrar modal de Bizum
+    function showBizumModal(order) {
+      totalAmount.textContent = `Total: €${order.total}`;
+      bizumModal.style.display = "flex";
 
-    document.getElementById("openCart").addEventListener("click", () => {
-      document.getElementById("cartSidebar").classList.add("open");
-    });
+      confirmPayment.onclick = () => {
+        sendConfirmationEmails(order);
+        if (order.type === "cesta") {
+          cart = [];
+          renderCart();
+          document.getElementById("cartSidebar").classList.remove("open");
+        }
+        bizumModal.style.display = "none";
+        alert(`✅ Gracias por tu compra, ${userDisplayName}!\nRecibirás la factura por email.`);
+      };
+    }
 
+    // Enviar emails de confirmación
+    function sendConfirmationEmails(order) {
+      const itemsList = order.items.map(item => 
+        `${item.quantity}x ${item.product} (${item.materials.join(", ")}) - €${item.price}`
+      ).join("<br>");
+
+      // Email al cliente
+      const customerEmail = {
+        to_email: auth.currentUser.email,
+        from_name: "Enlluernand",
+        subject: "✅ Tu pedido está confirmado",
+        message: `
+          <h2>¡Hola ${userDisplayName}!</h2>
+          <p>Gracias por tu compra en Enlluernand 💛</p>
+          <h3>Detalles de tu pedido:</h3>
+          <div>${itemsList}</div>
+          <p><strong>Total: €${order.total}</strong></p>
+          <p>Por favor, realiza el pago por Bizum al <strong>676 99 6</strong>.</p>
+          <p>En cuanto recibamos el pago, comenzaremos a preparar tu pedido.</p>
+          <br>
+          <p>Un abrazo,<br>Enlluernand</p>
+        `
+      };
+
+      // Email a ti (propietaria)
+      const ownerEmail = {
+        to_email: "tuemail@enlluernand.com", // ← Cambia esto por tu email
+        from_name: "Enlluernand",
+        subject: "📦 Nuevo pedido recibido",
+        message: `
+          <h2>🔔 Nuevo pedido de ${userDisplayName}</h2>
+          <p><strong>Email:</strong> ${auth.currentUser.email}</p>
+          <p><strong>Teléfono:</strong> ${userPhone}</p>
+          <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
+          <h3>Productos:</h3>
+          <div>${itemsList}</div>
+          <p><strong>Total: €${order.total}</strong></p>
+          <p>Cliente debe pagar por Bizum al 676 99 6</p>
+        `
+      };
+
+      emailjs.send("service_gmail", "template_pedido", customerEmail);
+      emailjs.send("service_gmail", "template_pedido", ownerEmail);
+    }
+
+    // Cerrar modal
     document.getElementById("closeCart").addEventListener("click", () => {
       document.getElementById("cartSidebar").classList.remove("open");
     });
