@@ -78,7 +78,7 @@
       text-align: left;
     }
 
-    .blocked-content input, .blocked-content textarea {
+    .blocked-content input, .blocked-content select, .blocked-content textarea {
       width: 100%;
       padding: 8px;
       border: 1px solid #ccc;
@@ -350,25 +350,29 @@
       <p>Para continuar, por favor completa tu información de contacto y envío.</p>
 
       <label>Nombre completo *</label>
-      <input type="text" id="userDataName" required>
+      <input type="text" id="userDataName">
 
       <label>Teléfono *</label>
-      <input type="text" id="userDataPhone" placeholder="676 99 6" required>
+      <input type="text" id="userDataPhone">
 
       <label>Dirección completa *</label>
-      <input type="text" id="userDataAddress" placeholder="Calle, número, piso, puerta" required>
+      <input type="text" id="userDataAddress">
 
       <label>Código postal *</label>
-      <input type="text" id="userDataPostal" required>
+      <input type="text" id="userDataPostal">
 
       <label>Población *</label>
-      <input type="text" id="userDataCity" required>
+      <input type="text" id="userDataCity">
 
       <label>Provincia *</label>
-      <input type="text" id="userDataProvince" required>
+      <input type="text" id="userDataProvince">
 
-      <label>País</label>
-      <input type="text" id="userDataCountry" value="España" required>
+      <label>País *</label>
+      <select id="userDataCountry">
+        <option value="Andorra">Andorra</option>
+        <option value="España">España</option>
+        <option value="Francia">Francia</option>
+      </select>
 
       <button id="saveUserData">Guardar y continuar</button>
     </div>
@@ -581,13 +585,13 @@
     const totalAmount = document.getElementById("totalAmount");
     const confirmPayment = document.getElementById("confirmPayment");
 
-    // Datos de tu Excel (conectores)
+    // Datos de conectores
     const materiales = [
-      {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460"},
-      {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300"},
-      {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348"},
-      {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348"},
-      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015"}
+      {"Codigo": 13, "Descripcion": "Conector Collar ORO", "Precio": "2,9200"},
+      {"Codigo": 14, "Descripcion": "Conector Collar PLATA", "Precio": "2,6000"},
+      {"Codigo": 15, "Descripcion": "Conector Resina ORO", "Precio": "1,3900"},
+      {"Codigo": 16, "Descripcion": "Conector Resina PLATA", "Precio": "1,3900"},
+      {"Codigo": 114, "Descripcion": "Conector Doble Oro *15cm", "Precio": "2,0300"}
     ];
 
     // Extras
@@ -600,6 +604,18 @@
     // Variables
     let cart = [];
     let selectedColors = [];
+
+    // Llenar conectores
+    function llenarConectores() {
+      const select = document.getElementById("add-conector-select");
+      select.innerHTML = '<option value="">Seleccionar conector...</option>';
+      materiales.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.Codigo;
+        option.textContent = item.Descripcion;
+        select.appendChild(option);
+      });
+    }
 
     // Mostrar overlay si falta información
     function checkUserData(user) {
@@ -667,19 +683,11 @@
       }
     });
 
-    // Llenar conectores
-    function llenarConectores() {
-      const select = document.getElementById("add-conector-select");
-      select.innerHTML = '<option value="">Seleccionar conector...</option>';
-      materiales.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item.Codigo;
-        option.textContent = item.Descripcion; // ✅ Precio oculto
-        select.appendChild(option);
-      });
-    }
+    // Añadir funciones del configurador (materiales, colores, conectores, etc.)
+    // (Código funcional completo aquí, igual que en versiones anteriores)
 
-    // Añadir material
+    // [Incluimos aquí todas las funciones: add-material-btn, add-colgante-btn, etc.]
+
     document.getElementById("add-material-btn").addEventListener("click", () => {
       const select = document.getElementById("add-material-select");
       const value = select.value;
@@ -695,7 +703,6 @@
       renderSummary();
     });
 
-    // Añadir colgante
     document.getElementById("add-colgante-btn").addEventListener("click", () => {
       const select = document.getElementById("add-colgante-select");
       const value = select.value;
@@ -711,7 +718,6 @@
       renderSummary();
     });
 
-    // Seleccionar color
     document.getElementById("color-options-add").addEventListener("click", (e) => {
       if (e.target.classList.contains("color-ball")) {
         const color = e.target.dataset.color;
@@ -728,7 +734,6 @@
       }
     });
 
-    // Añadir conector
     document.getElementById("add-conector-btn").addEventListener("click", () => {
       const select = document.getElementById("add-conector-select");
       const codigo = select.value;
@@ -745,7 +750,6 @@
       renderSummary();
     });
 
-    // Añadir extra
     document.getElementById("add-extra-btn").addEventListener("click", () => {
       const select = document.getElementById("add-extra-select");
       const key = select.value;
@@ -792,7 +796,6 @@
       price += materials.filter(m => m === "plata").length * 15;
       price += materials.filter(m => m === "cordon").length * 10;
 
-      // Conectores
       const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
         const codigo = row.dataset.codigo;
         const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
@@ -806,7 +809,6 @@
         }
       });
 
-      // Extras
       const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
         const key = row.dataset.key;
         const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
@@ -889,7 +891,6 @@
       cartBtn.textContent = `🛒 Cesta (${cart.length})`;
     }
 
-    // Añadir a la cesta
     document.getElementById("addToCart").addEventListener("click", () => {
       const config = getConfig();
       const product = config.product;
@@ -922,7 +923,6 @@
       };
     }
 
-    // Pagar ahora
     document.getElementById("payNow").addEventListener("click", () => {
       const config = getConfig();
       const product = config.product;
@@ -940,7 +940,6 @@
       showBizumModal(order);
     });
 
-    // Proceder al pago
     document.getElementById("proceedToPayment").addEventListener("click", () => {
       if (cart.length === 0) {
         alert("Tu cesta está vacía");
@@ -1008,7 +1007,6 @@
         .catch(err => console.error("❌ Error al enviar email a propietaria:", err));
     }
 
-    // Cerrar cesta
     document.getElementById("closeCart").addEventListener("click", () => {
       document.getElementById("cartSidebar").classList.remove("open");
     });
