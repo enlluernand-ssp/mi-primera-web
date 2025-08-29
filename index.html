@@ -83,6 +83,9 @@
     .color-options { display: flex; gap: 10px; margin: 8px 0 12px; }
     .color-ball { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; cursor: pointer; }
 
+    .config-container { display: flex; gap: 20px; }
+    .preview { flex: 1; background: #f9f9f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 18px; min-height: 300px; }
+
     .sidebar { position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -2px 0 8px rgba(0,0,0,0.2); transition: right 0.3s ease; padding: 20px; display: flex; flex-direction: column; z-index: 1000; }
     .sidebar.open { right: 0; }
     .sidebar h2 { margin-top: 0; }
@@ -118,26 +121,22 @@
     <section id="configurador">
       <h2>Configurador de accesorios</h2>
       <div class="config-container">
-        <div class="preview" id="preview"><strong>collar personalizado</strong><br>Puedes añadir múltiples elementos</div>
-        <div class="controls">
+        <!-- Vista previa -->
+        <div class="preview" id="preview">
+          <strong>Selecciona un producto</strong><br>
+          Añade materiales, colores y más
+        </div>
 
-          <!-- Múltiples productos -->
-          <div>
-            <label>Producto</label>
-            <select id="add-product-select">
-              <option value="">Seleccionar producto...</option>
-              <option value="collar">Collar</option>
-              <option value="pulsera">Pulsera</option>
-              <option value="pendientes">Pendientes</option>
-            </select>
-            <button type="button" id="add-product-btn">+ Añadir producto</button>
-            <div class="item-list" id="products-list">
-              <div class="item-row" id="product-template" style="display:none;">
-                <span class="name"></span>
-                <button class="remove">✖</button>
-              </div>
-            </div>
-          </div>
+        <!-- Controles -->
+        <div class="controls">
+          <!-- Producto (único, sin botón "Añadir") -->
+          <label>Producto</label>
+          <select id="product">
+            <option value="">Selecciona un producto...</option>
+            <option value="collar">Collar</option>
+            <option value="pulsera">Pulsera</option>
+            <option value="pendientes">Pendientes</option>
+          </select>
 
           <!-- Múltiples materiales -->
           <div>
@@ -168,7 +167,6 @@
               <div class="color-ball" style="background:pink" data-color="rosa"></div>
               <div class="color-ball" style="background:purple" data-color="morado"></div>
             </div>
-            <div id="selected-colors-add"></div>
             <div class="item-list" id="colors-list">
               <div class="item-row" id="color-template" style="display:none;">
                 <span class="name"></span>
@@ -460,23 +458,6 @@
       });
     }
 
-    // Añadir producto
-    document.getElementById("add-product-btn").addEventListener("click", () => {
-      const select = document.getElementById("add-product-select");
-      const value = select.value;
-      if (!value) return;
-      const name = select.options[select.selectedIndex].text;
-
-      const list = document.getElementById("products-list");
-      const row = document.createElement("div");
-      row.className = "item-row";
-      row.dataset.value = value;
-      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
-      list.appendChild(row);
-      select.value = "";
-      renderSummary();
-    });
-
     // Añadir material
     document.getElementById("add-material-btn").addEventListener("click", () => {
       const select = document.getElementById("add-material-select");
@@ -514,7 +495,7 @@
     // Seleccionar color
     document.getElementById("color-options-add").addEventListener("click", (e) => {
       if (e.target.classList.contains("color-ball")) {
-        const color = e.target.dataset-color;
+        const color = e.target.dataset.color;
         if (!selectedColors.includes(color)) {
           selectedColors.push(color);
 
@@ -529,10 +510,7 @@
       }
     });
 
-    // Eliminar elemento
-    document.getElementById("products-list").addEventListener("click", (e) => {
-      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
-    });
+    // Eliminar elementos
     document.getElementById("materials-list").addEventListener("click", (e) => {
       if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
     });
@@ -555,9 +533,6 @@
     });
 
     // Obtener elementos seleccionados
-    function getSelectedProducts() {
-      return Array.from(document.querySelectorAll("#products-list .item-row")).map(r => r.dataset.value);
-    }
     function getSelectedMaterials() {
       return Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
     }
@@ -630,7 +605,7 @@
 
     function getConfig() {
       return {
-        products: getSelectedProducts(),
+        product: document.getElementById("product").value,
         materials: getSelectedMaterials(),
         colors: selectedColors,
         colgantes: getSelectedColgantes(),
@@ -651,7 +626,13 @@
       const config = getConfig();
       const price = calculatePrice(config);
       summary.textContent = `Precio: €${price}`;
-      preview.innerHTML = `<strong>Collar personalizado</strong><br>${getSelectedMaterials().length} materiales, ${selectedColors.length} colores`;
+
+      const product = config.product || "producto";
+      const materialsCount = config.materials.length;
+      const colorsCount = config.colors.length;
+
+      preview.innerHTML = `<strong>${product.charAt(0).toUpperCase() + product.slice(1)}</strong><br>
+                           ${materialsCount} material(es), ${colorsCount} color(es)`;
     }
 
     function renderCart() {
@@ -661,7 +642,7 @@
         const div = document.createElement("div");
         div.className = "cesta-item";
         div.innerHTML = `
-          <strong>${item.quantity}x Collar personalizado</strong><br>
+          <strong>${item.quantity}x ${item.product}</strong><br>
           Materiales: ${item.materials.join(", ")}<br>
           Colores: ${item.colors.join(", ")}<br>
           Colgantes: ${item.colgantes.join(", ")}<br>
@@ -678,6 +659,11 @@
     // Añadir a la cesta
     document.getElementById("addToCart").addEventListener("click", () => {
       const config = getConfig();
+      const product = config.product;
+      if (!product) {
+        alert("⚠️ Por favor, selecciona un producto (collar, pulsera o pendientes)");
+        return;
+      }
       const price = calculatePrice(config);
       cart.push({ ...config, price });
       renderCart();
@@ -698,9 +684,17 @@
 
     document.getElementById("payNow").addEventListener("click", () => {
       const config = getConfig();
+      if (!config.product) {
+        alert("⚠️ Selecciona un producto antes de pagar");
+        return;
+      }
       config.price = calculatePrice(config);
       alert(`✅ Pago inmediato procesado - Total: €${config.price}`);
     });
+
+    document.getElementById("product").addEventListener("change", renderSummary);
+    document.getElementById("quantity").addEventListener("input", renderSummary);
+    document.getElementById("discount").addEventListener("input", renderSummary);
 
     document.getElementById("openCart").addEventListener("click", () => {
       document.getElementById("cartSidebar").classList.add("open");
