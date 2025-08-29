@@ -294,11 +294,9 @@
   <!-- Modal de Bizum -->
   <div class="modal-bizum" id="bizumModal">
     <div class="modal-content">
-      <h2>💳 Paga por Bizum</h2>
-      <p>Envía el pago al número:</p>
-      <div class="bizum-number">676 99 6</div>
-      <p><strong id="totalAmount">€0</strong></p>
-      <p>Una vez realizado, recibirás la factura por email.</p>
+      <h2>💳 Pago por Bizum</h2>
+      <p><strong id="customMessage">Nombre, haz el pago a través de Bizum al 676 99 6</strong></p>
+      <p><strong id="totalAmount">Total: €0</strong></p>
       <button id="confirmPayment">He realizado el pago</button>
     </div>
   </div>
@@ -521,6 +519,7 @@
     const bizumModal = document.getElementById("bizumModal");
     const totalAmount = document.getElementById("totalAmount");
     const confirmPayment = document.getElementById("confirmPayment");
+    const customMessage = document.getElementById("customMessage");
 
     // Generar código de descuento único
     function generarCodigoDescuento() {
@@ -570,7 +569,6 @@
         const doc = await userRef.get();
 
         if (!doc.exists) {
-          // Solicitar nombre y teléfono al registro
           const nombre = prompt("📝 Nombre completo:", user.displayName || user.email.split("@")[0]);
           const telefono = prompt("📱 Teléfono (para envíos y Bizum):", "");
           if (!nombre || !telefono) {
@@ -910,6 +908,25 @@
       alert("✅ Artículo añadido a la cesta");
     });
 
+    // Mostrar modal de Bizum
+    function showBizumModal(order) {
+      customMessage.textContent = `${userDisplayName}, haz el pago a través de Bizum al 676 99 6`;
+      totalAmount.textContent = `Total: €${order.total}`;
+      bizumModal.style.display = "flex";
+
+      confirmPayment.onclick = null;
+      confirmPayment.onclick = () => {
+        sendConfirmationEmails(order);
+        if (order.type === "cesta") {
+          cart = [];
+          renderCart();
+          document.getElementById("cartSidebar").classList.remove("open");
+        }
+        bizumModal.style.display = "none";
+        alert(`✅ Gracias por tu compra, ${userDisplayName}!\nPronto recibirás la factura por email.`);
+      };
+    }
+
     // Pagar ahora (único artículo)
     document.getElementById("payNow").addEventListener("click", () => {
       const config = getConfig();
@@ -942,30 +959,12 @@
       showBizumModal(order);
     });
 
-    // Mostrar modal de Bizum
-    function showBizumModal(order) {
-      totalAmount.textContent = `Total: €${order.total}`;
-      bizumModal.style.display = "flex";
-
-      confirmPayment.onclick = () => {
-        sendConfirmationEmails(order);
-        if (order.type === "cesta") {
-          cart = [];
-          renderCart();
-          document.getElementById("cartSidebar").classList.remove("open");
-        }
-        bizumModal.style.display = "none";
-        alert(`✅ Gracias por tu compra, ${userDisplayName}!\nRecibirás la factura por email.`);
-      };
-    }
-
     // Enviar emails de confirmación
     function sendConfirmationEmails(order) {
       const itemsList = order.items.map(item => 
         `${item.quantity}x ${item.product} (${item.materials.join(", ")}) - €${item.price}`
       ).join("<br>");
 
-      // Email al cliente
       const customerEmail = {
         to_email: auth.currentUser.email,
         from_name: "Enlluernand",
@@ -983,9 +982,8 @@
         `
       };
 
-      // Email a ti (propietaria)
       const ownerEmail = {
-        to_email: "tuemail@enlluernand.com", // ← Cambia esto por tu email
+        to_email: "tuemail@enlluernand.com", // ← Cambia esto por tu email real
         from_name: "Enlluernand",
         subject: "📦 Nuevo pedido recibido",
         message: `
