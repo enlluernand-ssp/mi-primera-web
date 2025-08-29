@@ -559,9 +559,10 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Datos del cliente
+    // Variables
     let userData = null;
     let userDisplayName = null;
+    let userDiscountCode = null;
 
     // Elementos del DOM
     const dataOverlay = document.getElementById("dataOverlay");
@@ -586,49 +587,109 @@
     const totalAmount = document.getElementById("totalAmount");
     const confirmPayment = document.getElementById("confirmPayment");
 
-    // Datos completos de tu Excel (conectores)
+    // Datos del Excel
     const materiales = [
       {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460","Unidades Restantes": 20},
       {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300","Unidades Restantes": 20},
       {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
       {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
-      {"Codigo": 17,"Descripcion": "Conector Resina Trebol ORO","Unidades": 20,"Precio": "1,9300","Costo": "0,0965","Unidades Restantes": 20},
-      {"Codigo": 18,"Descripcion": "Conector final","Unidades": 235,"Precio": "1,3000","Costo": "0,0055","Unidades Restantes": 235},
-      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
-      {"Codigo": 115,"Descripcion": "Conector Doble Plata *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
-      {"Codigo": 116,"Descripcion": "Conector Triple Cadena Oro *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
-      {"Codigo": 117,"Descripcion": "Conector Triple Cadena Plata *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
-      {"Codigo": 118,"Descripcion": "Anilla Cuerda Oro *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
-      {"Codigo": 119,"Descripcion": "Anilla Cuerda Plata *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
-      {"Codigo": 120,"Descripcion": "Conector Doble Brillante Oro","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
-      {"Codigo": 121,"Descripcion": "Conector Doble Brillante Plata","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
-      {"Codigo": 124,"Descripcion": "Conectar Cuadruple Oro","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
-      {"Codigo": 125,"Descripcion": "Conector Cuadruple Plata","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
-      {"Codigo": 126,"Descripcion": "Conector Quintuple Plata","Unidades": 4,"Precio": "0,6389","Costo": "0,1597","Unidades Restantes": 4}
+      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20}
     ];
 
-    // Extras
     const extras = {
       gift: { name: "Estuche para regalo", price: 5 },
       wrap: { name: "Envoltorio para regalo", price: 3 },
       urgent: { name: "Fabricación urgente", price: 10 }
     };
 
-    // Variables
     let cart = [];
     let selectedColors = [];
 
-    // Llenar conectores
-    function llenarConectores() {
-      const select = document.getElementById("add-conector-select");
-      select.innerHTML = '<option value="">Seleccionar conector...</option>';
-      materiales.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item.Codigo;
-        option.textContent = item.Descripcion;
-        select.appendChild(option);
+    // Generar código de descuento
+    function generarCodigoDescuento() {
+      const prefijos = ["BIENVENIDA", "LUZ", "AMOR", "ESTRELLA"];
+      const prefijo = prefijos[Math.floor(Math.random() * prefijos.length)];
+      const numero = Math.floor(Math.random() * 20 + 5);
+      return prefijo + numero + Math.random().toString(36).substr(2, 4).toUpperCase();
+    }
+
+    // Mostrar modal de bienvenida
+    function mostrarBienvenida(nombre) {
+      userDiscountCode = generarCodigoDescuento();
+      const codeElem = document.getElementById("discountCode");
+      codeElem.textContent = userDiscountCode;
+
+      const titleElem = document.getElementById("welcomeTitle");
+      titleElem.textContent = `🎉 ¡Hola, ${nombre}!`;
+
+      document.getElementById("welcomeModal").style.display = "block";
+    }
+
+    // Funciones del modal
+    function closeModal() {
+      document.getElementById("welcomeModal").style.display = "none";
+    }
+
+    function copyCode() {
+      navigator.clipboard.writeText(userDiscountCode).then(() => {
+        alert("✅ Código copiado al portapapeles!");
       });
     }
+
+    function useCode() {
+      document.getElementById("discount").value = userDiscountCode;
+      alert(`✅ Código "${userDiscountCode}" aplicado.`);
+      closeModal();
+    }
+
+    // Escuchar autenticación
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userRef = db.collection("usuarios").doc(user.uid);
+        const doc = await userRef.get();
+
+        if (!doc.exists) {
+          // Nuevo usuario
+          userDisplayName = user.displayName || user.email.split("@")[0];
+          mostrarBienvenida(userDisplayName);
+
+          await userRef.set({
+            email: user.email,
+            nombre: userDisplayName,
+            fechaRegistro: new Date(),
+            codigoDescuento: userDiscountCode,
+            usado: false,
+            expira: new Date(Date.now() + 24 * 60 * 60 * 1000)
+          });
+        } else {
+          const data = doc.data();
+          userDisplayName = data.nombre;
+          userDiscountCode = data.codigoDescuento;
+          if (new Date() > new Date(data.expira) || data.usado) {
+            userDiscountCode = null;
+          }
+        }
+        authButton.textContent = "Cerrar sesión";
+        checkUserData(user);
+      } else {
+        userData = null;
+        userDisplayName = null;
+        userDiscountCode = null;
+        authButton.textContent = "Iniciar sesión";
+      }
+      renderSummary();
+    });
+
+    // Manejar autenticación
+    authButton.addEventListener("click", () => {
+      const user = auth.currentUser;
+      if (user) {
+        auth.signOut();
+      } else {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => alert("Error: " + err.message));
+      }
+    });
 
     // Mostrar overlay si falta información
     function checkUserData(user) {
@@ -671,30 +732,17 @@
       }
     });
 
-    // Escuchar autenticación
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        userDisplayName = user.displayName || user.email.split("@")[0];
-        authButton.textContent = "Cerrar sesión";
-        checkUserData(user);
-      } else {
-        userData = null;
-        userDisplayName = null;
-        authButton.textContent = "Iniciar sesión";
-      }
-      renderSummary();
-    });
-
-    // Manejar autenticación
-    authButton.addEventListener("click", () => {
-      const user = auth.currentUser;
-      if (user) {
-        auth.signOut();
-      } else {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(err => alert("Error: " + err.message));
-      }
-    });
+    // Llenar conectores
+    function llenarConectores() {
+      const select = document.getElementById("add-conector-select");
+      select.innerHTML = '<option value="">Seleccionar conector...</option>';
+      materiales.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.Codigo;
+        option.textContent = item.Descripcion;
+        select.appendChild(option);
+      });
+    }
 
     // Añadir funciones del configurador
     document.getElementById("add-material-btn").addEventListener("click", () => {
@@ -707,69 +755,6 @@
       row.className = "item-row";
       row.dataset.value = value;
       row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
-      list.appendChild(row);
-      select.value = "";
-      renderSummary();
-    });
-
-    document.getElementById("add-colgante-btn").addEventListener("click", () => {
-      const select = document.getElementById("add-colgante-select");
-      const value = select.value;
-      if (!value) return;
-      const name = select.options[select.selectedIndex].text;
-      const list = document.getElementById("colgantes-list");
-      const row = document.createElement("div");
-      row.className = "item-row";
-      row.dataset.value = value;
-      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
-      list.appendChild(row);
-      select.value = "";
-      renderSummary();
-    });
-
-    document.getElementById("color-options-add").addEventListener("click", (e) => {
-      if (e.target.classList.contains("color-ball")) {
-        const color = e.target.dataset.color;
-        if (!selectedColors.includes(color)) {
-          selectedColors.push(color);
-          const list = document.getElementById("colors-list");
-          const row = document.createElement("div");
-          row.className = "item-row";
-          row.dataset.color = color;
-          row.innerHTML = `<span class="name">Color: ${color}</span><button class="remove">✖</button>`;
-          list.appendChild(row);
-          renderSummary();
-        }
-      }
-    });
-
-    document.getElementById("add-conector-btn").addEventListener("click", () => {
-      const select = document.getElementById("add-conector-select");
-      const codigo = select.value;
-      if (!codigo) return;
-      const material = materiales.find(m => m.Codigo == codigo);
-      if (!material) return;
-      const list = document.getElementById("conectores-list");
-      const row = document.createElement("div");
-      row.className = "item-row";
-      row.dataset.codigo = codigo;
-      row.innerHTML = `<span class="name">${material.Descripcion}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
-      list.appendChild(row);
-      select.value = "";
-      renderSummary();
-    });
-
-    document.getElementById("add-extra-btn").addEventListener("click", () => {
-      const select = document.getElementById("add-extra-select");
-      const key = select.value;
-      if (!key) return;
-      const extra = extras[key];
-      if (!extra) return;
-      const list = document.getElementById("extras-list");
-      const row = document.createElement("div");
-      row.className = "item-row";
-      row.dataset.key = key;
-      row.innerHTML = `<span class="name">${extra.name}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
       list.appendChild(row);
       select.value = "";
       renderSummary();
@@ -797,105 +782,6 @@
       if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
     });
 
-    // Cálculo de precio
-    function calculatePrice(config) {
-      let price = 20;
-      const materials = Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
-      price += materials.filter(m => m === "oro").length * 30;
-      price += materials.filter(m => m === "plata").length * 15;
-      price += materials.filter(m => m === "cordon").length * 10;
-
-      const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
-        const codigo = row.dataset.codigo;
-        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
-        return { codigo, cantidad };
-      });
-      conectores.forEach(item => {
-        const material = materiales.find(m => m.Codigo == item.codigo);
-        if (material) {
-          const precioNum = parseFloat(material.Precio.replace(",", "."));
-          price += precioNum * item.cantidad;
-        }
-      });
-
-      const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
-        const key = row.dataset.key;
-        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
-        return { key, cantidad };
-      });
-      extrasList.forEach(item => {
-        const extra = extras[item.key];
-        if (extra) {
-          price += extra.price * item.cantidad;
-        }
-      });
-
-      price *= config.quantity;
-      return Math.round(price * 100) / 100;
-    }
-
-    function getConfig() {
-      return {
-        product: document.getElementById("product").value,
-        materials: Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value),
-        colors: selectedColors,
-        colgantes: Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value),
-        conectores: Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => ({
-          codigo: row.dataset.codigo,
-          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
-        })),
-        extras: Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => ({
-          key: row.dataset.key,
-          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
-        })),
-        discount: document.getElementById("discount").value,
-        quantity: parseInt(document.getElementById("quantity").value) || 1
-      };
-    }
-
-    // Vista previa
-    function renderSummary() {
-      const config = getConfig();
-      const price = calculatePrice(config);
-      summary.textContent = `Precio: €${price}`;
-
-      const product = config.product;
-      const materials = Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
-      const colgantes = Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value);
-      const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
-        const codigo = row.dataset.codigo;
-        const material = materiales.find(m => m.Codigo == codigo);
-        return material ? material.Descripcion : "Desconocido";
-      });
-      const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
-        const key = row.dataset.key;
-        return extras[key]?.name || "Extra";
-      });
-
-      if (!product) {
-        preview.innerHTML = `
-          <div class="preview-title">Ningún producto</div>
-          <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
-        `;
-        return;
-      }
-
-      let html = `<div class="preview-title">${product.charAt(0).toUpperCase() + product.slice(1)}</div>`;
-      if (materials.length > 0) html += `<div class="preview-line">Materiales: ${materials.join(", ")}</div>`;
-      if (selectedColors.length > 0) {
-        html += `<div class="preview-line">Colores:</div><div class="preview-colors">`;
-        selectedColors.forEach(color => {
-          html += `<div class="color-ball" style="background:${color}; width:18px; height:18px;"></div>`;
-        });
-        html += `</div>`;
-      }
-      if (colgantes.length > 0) html += `<div class="preview-line">Colgantes: ${colgantes.join(", ")}</div>`;
-      if (conectores.length > 0) html += `<div class="preview-line">Conectores: ${conectores.length}</div>`;
-      if (extrasList.length > 0) html += `<div class="preview-line">Extras: ${extrasList.join(", ")}</div>`;
-
-      preview.innerHTML = html;
-    }
-
     // Renderizar cesta
     function renderCart() {
       cartItems.innerHTML = "";
@@ -908,6 +794,7 @@
           Materiales: ${item.materials.join(", ")}<br>
           Colores: ${item.colors.join(", ")}<br>
           Precio: €${item.price}
+          <button onclick="removeFromCart(${index})">✖</button>
           <hr>
         `;
         cartItems.appendChild(div);
@@ -917,19 +804,10 @@
       cartBtn.textContent = `🛒 Cesta (${cart.length})`;
     }
 
-    // Añadir a la cesta
-    document.getElementById("addToCart").addEventListener("click", () => {
-      const config = getConfig();
-      const product = config.product;
-      if (!product) {
-        alert("⚠️ Por favor, selecciona un producto");
-        return;
-      }
-      const price = calculatePrice(config);
-      cart.push({ ...config, price });
+    window.removeFromCart = function(index) {
+      cart.splice(index, 1);
       renderCart();
-      alert("✅ Artículo añadido a la cesta");
-    });
+    };
 
     // Abrir cesta
     document.getElementById("openCart").addEventListener("click", () => {
