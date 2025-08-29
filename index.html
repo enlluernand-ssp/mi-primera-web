@@ -78,7 +78,7 @@
       text-align: left;
     }
 
-    .blocked-content input, .blocked-content select, .blocked-content textarea {
+    .blocked-content input, .blocked-content select {
       width: 100%;
       padding: 8px;
       border: 1px solid #ccc;
@@ -585,13 +585,25 @@
     const totalAmount = document.getElementById("totalAmount");
     const confirmPayment = document.getElementById("confirmPayment");
 
-    // Datos de conectores
+    // Datos completos de tu Excel (conectores)
     const materiales = [
-      {"Codigo": 13, "Descripcion": "Conector Collar ORO", "Precio": "2,9200"},
-      {"Codigo": 14, "Descripcion": "Conector Collar PLATA", "Precio": "2,6000"},
-      {"Codigo": 15, "Descripcion": "Conector Resina ORO", "Precio": "1,3900"},
-      {"Codigo": 16, "Descripcion": "Conector Resina PLATA", "Precio": "1,3900"},
-      {"Codigo": 114, "Descripcion": "Conector Doble Oro *15cm", "Precio": "2,0300"}
+      {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460","Unidades Restantes": 20},
+      {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300","Unidades Restantes": 20},
+      {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
+      {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
+      {"Codigo": 17,"Descripcion": "Conector Resina Trebol ORO","Unidades": 20,"Precio": "1,9300","Costo": "0,0965","Unidades Restantes": 20},
+      {"Codigo": 18,"Descripcion": "Conector final","Unidades": 235,"Precio": "1,3000","Costo": "0,0055","Unidades Restantes": 235},
+      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
+      {"Codigo": 115,"Descripcion": "Conector Doble Plata *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
+      {"Codigo": 116,"Descripcion": "Conector Triple Cadena Oro *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
+      {"Codigo": 117,"Descripcion": "Conector Triple Cadena Plata *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
+      {"Codigo": 118,"Descripcion": "Anilla Cuerda Oro *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
+      {"Codigo": 119,"Descripcion": "Anilla Cuerda Plata *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
+      {"Codigo": 120,"Descripcion": "Conector Doble Brillante Oro","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
+      {"Codigo": 121,"Descripcion": "Conector Doble Brillante Plata","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
+      {"Codigo": 124,"Descripcion": "Conectar Cuadruple Oro","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
+      {"Codigo": 125,"Descripcion": "Conector Cuadruple Plata","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
+      {"Codigo": 126,"Descripcion": "Conector Quintuple Plata","Unidades": 4,"Precio": "0,6389","Costo": "0,1597","Unidades Restantes": 4}
     ];
 
     // Extras
@@ -683,11 +695,7 @@
       }
     });
 
-    // Añadir funciones del configurador (materiales, colores, conectores, etc.)
-    // (Código funcional completo aquí, igual que en versiones anteriores)
-
-    // [Incluimos aquí todas las funciones: add-material-btn, add-colgante-btn, etc.]
-
+    // Añadir funciones del configurador
     document.getElementById("add-material-btn").addEventListener("click", () => {
       const select = document.getElementById("add-material-select");
       const value = select.value;
@@ -844,12 +852,25 @@
       };
     }
 
+    // Vista previa
     function renderSummary() {
       const config = getConfig();
       const price = calculatePrice(config);
       summary.textContent = `Precio: €${price}`;
 
       const product = config.product;
+      const materials = Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
+      const colgantes = Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value);
+      const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
+        const codigo = row.dataset.codigo;
+        const material = materiales.find(m => m.Codigo == codigo);
+        return material ? material.Descripcion : "Desconocido";
+      });
+      const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
+        const key = row.dataset.key;
+        return extras[key]?.name || "Extra";
+      });
+
       if (!product) {
         preview.innerHTML = `
           <div class="preview-title">Ningún producto</div>
@@ -859,18 +880,22 @@
       }
 
       let html = `<div class="preview-title">${product.charAt(0).toUpperCase() + product.slice(1)}</div>`;
-      const materials = config.materials;
       if (materials.length > 0) html += `<div class="preview-line">Materiales: ${materials.join(", ")}</div>`;
-      if (config.colors.length > 0) {
+      if (selectedColors.length > 0) {
         html += `<div class="preview-line">Colores:</div><div class="preview-colors">`;
-        config.colors.forEach(color => {
+        selectedColors.forEach(color => {
           html += `<div class="color-ball" style="background:${color}; width:18px; height:18px;"></div>`;
         });
         html += `</div>`;
       }
+      if (colgantes.length > 0) html += `<div class="preview-line">Colgantes: ${colgantes.join(", ")}</div>`;
+      if (conectores.length > 0) html += `<div class="preview-line">Conectores: ${conectores.length}</div>`;
+      if (extrasList.length > 0) html += `<div class="preview-line">Extras: ${extrasList.join(", ")}</div>`;
+
       preview.innerHTML = html;
     }
 
+    // Renderizar cesta
     function renderCart() {
       cartItems.innerHTML = "";
       let total = 0;
@@ -891,6 +916,7 @@
       cartBtn.textContent = `🛒 Cesta (${cart.length})`;
     }
 
+    // Añadir a la cesta
     document.getElementById("addToCart").addEventListener("click", () => {
       const config = getConfig();
       const product = config.product;
@@ -902,6 +928,40 @@
       cart.push({ ...config, price });
       renderCart();
       alert("✅ Artículo añadido a la cesta");
+    });
+
+    // Pagar ahora
+    document.getElementById("payNow").addEventListener("click", () => {
+      const config = getConfig();
+      const product = config.product;
+      if (!product) {
+        alert("⚠️ Selecciona un producto antes de pagar");
+        return;
+      }
+      if (!userData) {
+        alert("⚠️ Completa tus datos de envío primero");
+        dataOverlay.style.display = "flex";
+        return;
+      }
+      const price = calculatePrice(config);
+      const order = { items: [ { ...config, price } ], total: price, type: "individual" };
+      showBizumModal(order);
+    });
+
+    // Proceder al pago
+    document.getElementById("proceedToPayment").addEventListener("click", () => {
+      if (cart.length === 0) {
+        alert("Tu cesta está vacía");
+        return;
+      }
+      if (!userData) {
+        alert("⚠️ Completa tus datos de envío primero");
+        dataOverlay.style.display = "flex";
+        return;
+      }
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const order = { items: cart, total, type: "cesta" };
+      showBizumModal(order);
     });
 
     // Mostrar modal de Bizum
@@ -922,38 +982,6 @@
         alert(`✅ Gracias por tu compra, ${userData.name}!\nPronto recibirás la factura por email.`);
       };
     }
-
-    document.getElementById("payNow").addEventListener("click", () => {
-      const config = getConfig();
-      const product = config.product;
-      if (!product) {
-        alert("⚠️ Selecciona un producto antes de pagar");
-        return;
-      }
-      if (!userData) {
-        alert("⚠️ Completa tus datos de envío primero");
-        dataOverlay.style.display = "flex";
-        return;
-      }
-      const price = calculatePrice(config);
-      const order = { items: [ { ...config, price } ], total: price, type: "individual" };
-      showBizumModal(order);
-    });
-
-    document.getElementById("proceedToPayment").addEventListener("click", () => {
-      if (cart.length === 0) {
-        alert("Tu cesta está vacía");
-        return;
-      }
-      if (!userData) {
-        alert("⚠️ Completa tus datos de envío primero");
-        dataOverlay.style.display = "flex";
-        return;
-      }
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
-      const order = { items: cart, total, type: "cesta" };
-      showBizumModal(order);
-    });
 
     // Enviar correos
     function sendConfirmationEmails(order, data) {
@@ -1007,6 +1035,7 @@
         .catch(err => console.error("❌ Error al enviar email a propietaria:", err));
     }
 
+    // Cerrar cesta
     document.getElementById("closeCart").addEventListener("click", () => {
       document.getElementById("cartSidebar").classList.remove("open");
     });
