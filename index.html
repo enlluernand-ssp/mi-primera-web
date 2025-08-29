@@ -48,7 +48,7 @@
     .cart-btn { background: #0077cc; color: white; border: none; }
     .cart-btn:hover { background: #005fa3; }
 
-    /* Diseño de 3 columnas: 1/3 cada una */
+    /* Diseño de 3 columnas: 1/3 cada una, misma altura */
     .main-container {
       display: flex;
       gap: 20px;
@@ -57,18 +57,14 @@
       padding: 0 20px;
     }
 
-    #preview-section {
+    #preview-section, #configurador, #catalogo {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
     }
 
-    #configurador {
-      flex: 1;
-      min-width: 0;
-    }
-
-    #catalogo {
-      flex: 1;
+    section {
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -167,6 +163,7 @@
       min-height: 400px;
       padding: 15px;
       text-align: center;
+      flex: 1;
     }
 
     .preview-title {
@@ -189,32 +186,17 @@
       justify-content: center;
     }
 
-    /* Catálogo clickeable */
-    .catalog-item {
-      cursor: pointer;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 15px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .catalog-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .catalog-item img {
+    /* Catálogo */
+    #catalogo img {
       width: 100%;
-      max-width: 120px;
-      border-radius: 6px;
-      margin-bottom: 8px;
+      max-width: 150px;
+      border-radius: 8px;
+      margin-bottom: 10px;
     }
 
-    .catalog-item p {
-      margin: 5px 0;
-      font-size: 14px;
-      color: #333;
+    #catalogo h3 {
+      margin: 15px 0 5px;
+      font-size: 16px;
     }
 
     .sidebar {
@@ -401,30 +383,24 @@
       </div>
     </section>
 
-    <!-- 3/3: Catálogo Clickeable -->
+    <!-- 3/3: Catálogo (listo para fotos reales) -->
     <section id="catalogo">
       <h2>Catálogo</h2>
 
-      <!-- Collar Estrella -->
-      <div class="catalog-item" data-product="collar" data-material="oro" data-colgante="estrella" data-color="azul">
-        <img src="https://via.placeholder.com/120?text=Collar+Estrella" alt="Collar con estrella">
-        <p><strong>Collar Estrella</strong></p>
-        <p>Oro, azul, con estrella brillante</p>
-      </div>
+      <!-- Collar -->
+      <h3>Collares</h3>
+      <img src="https://via.placeholder.com/150?text=Collar+1" alt="Collar 1">
+      <p>Collar de oro con conector doble</p>
 
-      <!-- Pulsera Corazón -->
-      <div class="catalog-item" data-product="pulsera" data-material="plata" data-colgante="corazon" data-color="rojo">
-        <img src="https://via.placeholder.com/120?text=Pulsera+Corazón" alt="Pulsera con corazón">
-        <p><strong>Pulsera Corazón</strong></p>
-        <p>Plata, rojo, con corazón</p>
-      </div>
+      <!-- Pulsera -->
+      <h3>Pulseras</h3>
+      <img src="https://via.placeholder.com/150?text=Pulsera+1" alt="Pulsera 1">
+      <p>Pulsera de plata con estrella</p>
 
-      <!-- Pendientes Nube -->
-      <div class="catalog-item" data-product="pendientes" data-material="oro" data-colgante="nube" data-color="amarillo">
-        <img src="https://via.placeholder.com/120?text=Pendientes+Nube" alt="Pendientes con nube">
-        <p><strong>Pendientes Nube</strong></p>
-        <p>Oro, amarillo, con nube</p>
-      </div>
+      <!-- Pendientes -->
+      <h3>Pendientes</h3>
+      <img src="https://via.placeholder.com/150?text=Pendientes+1" alt="Pendientes 1">
+      <p>Pendientes con flor de resina</p>
     </section>
 
   </div>
@@ -955,34 +931,6 @@
 
     document.getElementById("closeCart").addEventListener("click", () => {
       document.getElementById("cartSidebar").classList.remove("open");
-    });
-
-    // Catálogo clickeable
-    document.querySelectorAll(".catalog-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const product = item.dataset.product;
-        const material = item.dataset.material;
-        const colgante = item.dataset.colgante;
-        const color = item.dataset.color;
-
-        // Seleccionar producto
-        document.getElementById("product").value = product;
-        
-        // Añadir material
-        document.getElementById("add-material-select").value = material;
-        document.getElementById("add-material-btn").click();
-
-        // Añadir colgante
-        document.getElementById("add-colgante-select").value = colgante;
-        document.getElementById("add-colgante-btn").click();
-
-        // Añadir color
-        const colorBall = document.querySelector(`.color-ball[data-color="${color}"]`);
-        if (colorBall) colorBall.click();
-
-        renderSummary();
-        alert(`✅ Plantilla "${product} con ${colgante}" aplicada`);
-      });
     });
 
     // Inicializar
