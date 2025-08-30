@@ -383,7 +383,7 @@
   <div class="modal-bizum" id="bizumModal">
     <div class="modal-content">
       <h2>💳 Pago por Bizum</h2>
-      <p><strong id="customMessage">Nombre, haz el pago a través de Bizum al 676 99 6</strong></p>
+      <p><strong id="customMessage">Nombre, haz el pago a través de Bizum al +376 676 99 6</strong></p>
       <p><strong id="totalAmount">Total: €0</strong></p>
       <button id="confirmPayment">He realizado el pago</button>
     </div>
@@ -587,21 +587,35 @@
     const totalAmount = document.getElementById("totalAmount");
     const confirmPayment = document.getElementById("confirmPayment");
 
-    // Datos del Excel
+    // Datos completos del Excel (conectores)
     const materiales = [
       {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460","Unidades Restantes": 20},
       {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300","Unidades Restantes": 20},
       {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
       {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
-      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20}
+      {"Codigo": 17,"Descripcion": "Conector Resina Trebol ORO","Unidades": 20,"Precio": "1,9300","Costo": "0,0965","Unidades Restantes": 20},
+      {"Codigo": 18,"Descripcion": "Conector final","Unidades": 235,"Precio": "1,3000","Costo": "0,0055","Unidades Restantes": 235},
+      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
+      {"Codigo": 115,"Descripcion": "Conector Doble Plata *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20},
+      {"Codigo": 116,"Descripcion": "Conector Triple Cadena Oro *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
+      {"Codigo": 117,"Descripcion": "Conector Triple Cadena Plata *20cm/30cm","Unidades": 2,"Precio": "1,0150","Costo": "0,5075","Unidades Restantes": 2},
+      {"Codigo": 118,"Descripcion": "Anilla Cuerda Oro *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
+      {"Codigo": 119,"Descripcion": "Anilla Cuerda Plata *6mm","Unidades": 10,"Precio": "0,6389","Costo": "0,0639","Unidades Restantes": 10},
+      {"Codigo": 120,"Descripcion": "Conector Doble Brillante Oro","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
+      {"Codigo": 121,"Descripcion": "Conector Doble Brillante Plata","Unidades": 10,"Precio": "0,7667","Costo": "0,0767","Unidades Restantes": 10},
+      {"Codigo": 124,"Descripcion": "Conectar Cuadruple Oro","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
+      {"Codigo": 125,"Descripcion": "Conector Cuadruple Plata","Unidades": 2,"Precio": "0,5111","Costo": "0,2556","Unidades Restantes": 2},
+      {"Codigo": 126,"Descripcion": "Conector Quintuple Plata","Unidades": 4,"Precio": "0,6389","Costo": "0,1597","Unidades Restantes": 4}
     ];
 
+    // Extras
     const extras = {
       gift: { name: "Estuche para regalo", price: 5 },
       wrap: { name: "Envoltorio para regalo", price: 3 },
       urgent: { name: "Fabricación urgente", price: 10 }
     };
 
+    // Variables
     let cart = [];
     let selectedColors = [];
 
@@ -665,12 +679,13 @@
           const data = doc.data();
           userDisplayName = data.nombre;
           userDiscountCode = data.codigoDescuento;
+          userData = data.direccion;
           if (new Date() > new Date(data.expira) || data.usado) {
             userDiscountCode = null;
           }
         }
         authButton.textContent = "Cerrar sesión";
-        checkUserData(user);
+        if (userData) dataOverlay.style.display = "none";
       } else {
         userData = null;
         userDisplayName = null;
@@ -688,47 +703,6 @@
       } else {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(err => alert("Error: " + err.message));
-      }
-    });
-
-    // Mostrar overlay si falta información
-    function checkUserData(user) {
-      if (!user) return;
-      db.collection("usuarios").doc(user.uid).get().then(doc => {
-        if (doc.exists && doc.data().direccion) {
-          userData = doc.data().direccion;
-        } else {
-          dataOverlay.style.display = "flex";
-        }
-      });
-    }
-
-    // Guardar datos del cliente
-    saveUserData.addEventListener("click", () => {
-      const name = userDataName.value.trim();
-      const phone = userDataPhone.value.trim();
-      const address = userDataAddress.value.trim();
-      const postal = userDataPostal.value.trim();
-      const city = userDataCity.value.trim();
-      const province = userDataProvince.value.trim();
-      const country = userDataCountry.value.trim();
-
-      if (!name || !phone || !address || !postal || !city || !province || !country) {
-        alert("⚠️ Completa todos los campos.");
-        return;
-      }
-
-      userData = { name, phone, address, postal, city, province, country };
-      dataOverlay.style.display = "none";
-
-      if (auth.currentUser) {
-        db.collection("usuarios").doc(auth.currentUser.uid).set({
-          direccion: userData,
-          nombre: name,
-          telefono: phone,
-          email: auth.currentUser.email,
-          fecha: new Date()
-        }, { merge: true });
       }
     });
 
@@ -760,10 +734,24 @@
       renderSummary();
     });
 
-    // Eliminar elementos
-    document.getElementById("materials-list").addEventListener("click", (e) => {
-      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    // Seleccionar color
+    document.getElementById("color-options-add").addEventListener("click", (e) => {
+      if (e.target.classList.contains("color-ball")) {
+        const color = e.target.dataset.color;
+        if (!selectedColors.includes(color)) {
+          selectedColors.push(color);
+          const list = document.getElementById("colors-list");
+          const row = document.createElement("div");
+          row.className = "item-row";
+          row.dataset.color = color;
+          row.innerHTML = `<span class="name">Color: ${color}</span><button class="remove">✖</button>`;
+          list.appendChild(row);
+          renderSummary();
+        }
+      }
     });
+
+    // Eliminar colores
     document.getElementById("colors-list").addEventListener("click", (e) => {
       if (e.target.classList.contains("remove")) {
         const color = e.target.closest(".item-row").dataset.color;
@@ -771,6 +759,28 @@
         e.target.closest(".item-row").remove();
         renderSummary();
       }
+    });
+
+    // Añadir conector
+    document.getElementById("add-conector-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-conector-select");
+      const codigo = select.value;
+      if (!codigo) return;
+      const material = materiales.find(m => m.Codigo == codigo);
+      if (!material) return;
+      const list = document.getElementById("conectores-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.codigo = codigo;
+      row.innerHTML = `<span class="name">${material.Descripcion}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Eliminar elementos
+    document.getElementById("materials-list").addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
     });
     document.getElementById("colgantes-list").addEventListener("click", (e) => {
       if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
@@ -780,6 +790,39 @@
     });
     document.getElementById("extras-list").addEventListener("click", (e) => {
       if (e.target.classList.contains("remove")) e.target.closest(".item-row").remove(); renderSummary();
+    });
+
+    // Añadir colgante
+    document.getElementById("add-colgante-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-colgante-select");
+      const value = select.value;
+      if (!value) return;
+      const name = select.options[select.selectedIndex].text;
+      const list = document.getElementById("colgantes-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.value = value;
+      row.innerHTML = `<span class="name">${name}</span><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
+    });
+
+    // Añadir extra
+    document.getElementById("add-extra-btn").addEventListener("click", () => {
+      const select = document.getElementById("add-extra-select");
+      const key = select.value;
+      if (!key) return;
+      const extra = extras[key];
+      if (!extra) return;
+      const list = document.getElementById("extras-list");
+      const row = document.createElement("div");
+      row.className = "item-row";
+      row.dataset.key = key;
+      row.innerHTML = `<span class="name">${extra.name}</span><input type="number" value="1" min="1" class="cantidad" style="width:50px;"><button class="remove">✖</button>`;
+      list.appendChild(row);
+      select.value = "";
+      renderSummary();
     });
 
     // Renderizar cesta
@@ -854,7 +897,7 @@
 
     // Mostrar modal de Bizum
     function showBizumModal(order) {
-      customMessage.textContent = `${userData.name}, haz el pago a través de Bizum al 676 99 6`;
+      customMessage.textContent = `${userData.name}, haz el pago a través de Bizum al +376 676 99 6`;
       totalAmount.textContent = `Total: €${order.total}`;
       bizumModal.style.display = "flex";
 
@@ -889,7 +932,7 @@
           <p><strong>Total: €${order.total}</strong></p>
           <h3>Datos de envío:</h3>
           <p>${data.name}<br>${data.address}<br>${data.postal} ${data.city}<br>${data.province}, ${data.country}<br>Tel: ${data.phone}</p>
-          <p>Pago por Bizum al <strong>676 99 6</strong>.</p>
+          <p>Pago por Bizum al <strong>+376 676 99 6</strong>.</p>
           <br>
           <p>Un abrazo,<br>Enlluernand</p>
         `
@@ -910,7 +953,7 @@
           <p><strong>Total: €${order.total}</strong></p>
           <h3>🚚 Envío a:</h3>
           <p>${data.address}<br>${data.postal} ${data.city}<br>${data.province}, ${data.country}</p>
-          <p>Pago por Bizum al 676 99 6</p>
+          <p>Pago por Bizum al +376 676 99 6</p>
         `
       };
 
