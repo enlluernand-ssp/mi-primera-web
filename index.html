@@ -923,6 +923,104 @@
         .catch(err => console.error("❌ Error al enviar email a propietaria:", err));
     }
 
+    // Cálculo de precio
+    function calculatePrice(config) {
+      let price = 20;
+      const materials = Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
+      price += materials.filter(m => m === "oro").length * 30;
+      price += materials.filter(m => m === "plata").length * 15;
+      price += materials.filter(m => m === "cordon").length * 10;
+
+      const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
+        const codigo = row.dataset.codigo;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { codigo, cantidad };
+      });
+      conectores.forEach(item => {
+        const material = materiales.find(m => m.Codigo == item.codigo);
+        if (material) {
+          const precioNum = parseFloat(material.Precio.replace(",", "."));
+          price += precioNum * item.cantidad;
+        }
+      });
+
+      const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
+        const key = row.dataset.key;
+        const cantidad = parseInt(row.querySelector(".cantidad").value) || 1;
+        return { key, cantidad };
+      });
+      extrasList.forEach(item => {
+        const extra = extras[item.key];
+        if (extra) {
+          price += extra.price * item.cantidad;
+        }
+      });
+
+      price *= config.quantity;
+      return Math.round(price * 100) / 100;
+    }
+
+    function getConfig() {
+      return {
+        product: document.getElementById("product").value,
+        materials: Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value),
+        colors: selectedColors,
+        colgantes: Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value),
+        conectores: Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => ({
+          codigo: row.dataset.codigo,
+          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
+        })),
+        extras: Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => ({
+          key: row.dataset.key,
+          cantidad: parseInt(row.querySelector(".cantidad").value) || 1
+        })),
+        discount: document.getElementById("discount").value,
+        quantity: parseInt(document.getElementById("quantity").value) || 1
+      };
+    }
+
+    function renderSummary() {
+      const config = getConfig();
+      const price = calculatePrice(config);
+      summary.textContent = `Precio: €${price}`;
+
+      const product = config.product;
+      const materials = Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value);
+      const colgantes = Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value);
+      const conectores = Array.from(document.querySelectorAll("#conectores-list .item-row")).map(row => {
+        const codigo = row.dataset.codigo;
+        const material = materiales.find(m => m.Codigo == codigo);
+        return material ? material.Descripcion : "Desconocido";
+      });
+      const extrasList = Array.from(document.querySelectorAll("#extras-list .item-row")).map(row => {
+        const key = row.dataset.key;
+        return extras[key]?.name || "Extra";
+      });
+
+      if (!product) {
+        preview.innerHTML = `
+          <div class="preview-title">Ningún producto</div>
+          <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
+        `;
+        return;
+      }
+
+      let html = `<div class="preview-title">${product.charAt(0).toUpperCase() + product.slice(1)}</div>`;
+      if (materials.length > 0) html += `<div class="preview-line">Materiales: ${materials.join(", ")}</div>`;
+      if (selectedColors.length > 0) {
+        html += `<div class="preview-line">Colores:</div><div class="preview-colors">`;
+        selectedColors.forEach(color => {
+          html += `<div class="color-ball" style="background:${color}; width:18px; height:18px;"></div>`;
+        });
+        html += `</div>`;
+      }
+      if (colgantes.length > 0) html += `<div class="preview-line">Colgantes: ${colgantes.join(", ")}</div>`;
+      if (conectores.length > 0) html += `<div class="preview-line">Conectores: ${conectores.length}</div>`;
+      if (extrasList.length > 0) html += `<div class="preview-line">Extras: ${extrasList.join(", ")}</div>`;
+
+      preview.innerHTML = html;
+    }
+
     // Inicializar
     window.onload = function() {
       llenarConectores();
