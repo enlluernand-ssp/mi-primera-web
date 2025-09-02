@@ -413,7 +413,7 @@
     </div>
   </div>
 
-  <!-- Contenedor principal: 3 columnas -->
+  <!-- Contenido principal: 3 columnas -->
   <div class="main-container">
     
     <!-- 1/3: Vista previa -->
@@ -695,7 +695,7 @@
         } else {
           setTimeout(() => {
             dataOverlay.style.display = "flex";
-          }, 500); // Pequeño retraso para asegurar renderizado
+          }, 500);
         }
       } else {
         // Cierre de sesión
@@ -714,7 +714,13 @@
         auth.signOut();
       } else {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(err => alert("Error: " + err.message));
+        auth.signInWithPopup(provider).catch(err => {
+          if (err.code === 'auth/popup-closed-by-user') {
+            alert("❌ La ventana de inicio de sesión fue cerrada. Por favor inténtalo de nuevo.");
+          } else {
+            alert("Error: " + err.message);
+          }
+        });
       }
     });
 
