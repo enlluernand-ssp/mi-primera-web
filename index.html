@@ -319,6 +319,26 @@
     .modal-content button {
       margin-top: 15px;
     }
+
+    /* Toast: Mensaje emergente */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0077cc;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -332,12 +352,16 @@
     </div>
   </header>
 
+  <!-- Toast: Mensaje emergente -->
+  <div id="toast" class="toast">Artículo añadido a la cesta</div>
+
   <!-- Modal de Bienvenida -->
   <div id="welcomeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999;">
     <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:12px; max-width:400px; text-align:center;">
       <h2 id="welcomeTitle">🎉 ¡Hola!</h2>
       <p id="welcomeMessage">Tu código de descuento es:</p>
       <div id="discountCode" style="font-size:1.5em; font-weight:bold; color:#0077cc; margin:10px 0;"></div>
+      <p style="font-size:0.9em; color:#666;">Válido por 24 horas</p>
       <button onclick="copyCode()" style="background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Copiar código</button>
       <button onclick="useCode()" style="margin-top:10px; background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Usar código</button>
       <button onclick="closeModal()" style="margin-top:10px; background:#ccc; color:black; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Cerrar</button>
@@ -442,6 +466,8 @@
             <div class="color-ball" style="background:yellow" data-color="amarillo"></div>
             <div class="color-ball" style="background:pink" data-color="rosa"></div>
             <div class="color-ball" style="background:purple" data-color="morado"></div>
+            <div class="color-ball" style="background:brown" data-color="marrón"></div>
+            <div class="color-ball" style="background:black" data-color="negro"></div>
           </div>
           <div class="item-list" id="colors-list">
             <div class="item-row" id="color-template" style="display:none;">
@@ -476,6 +502,9 @@
             <option value="estrella">Estrella</option>
             <option value="nube">Nube</option>
             <option value="flor">Flor</option>
+            <option value="inicial">Letra inicial</option>
+            <option value="mano">Mano de Fátima</option>
+            <option value="dije">Dije personalizado</option>
           </select>
           <button type="button" id="add-colgante-btn">+ Añadir colgante</button>
           <div class="item-list" id="colgantes-list">
@@ -498,9 +527,10 @@
           </div>
           <select id="add-extra-select">
             <option value="">Seleccionar extra...</option>
-            <option value="gift">Estuche para regalo</option>
-            <option value="wrap">Envoltorio para regalo</option>
-            <option value="urgent">Fabricación urgente</option>
+            <option value="gift">Estuche para regalo (+€5)</option>
+            <option value="wrap">Envoltorio para regalo (+€3)</option>
+            <option value="urgent">Fabricación urgente (+€10)</option>
+            <option value="tarjeta">Tarjeta con dedicatoria (+€2)</option>
           </select>
           <button type="button" id="add-extra-btn">+ Añadir extra</button>
         </div>
@@ -566,19 +596,22 @@
     let cart = [];
     let selectedColors = [];
 
-    // Datos del Excel
+    // Datos del Excel (actualizados)
     const materiales = [
-      {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460","Unidades Restantes": 20},
-      {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300","Unidades Restantes": 20},
-      {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
-      {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348","Unidades Restantes": 40},
-      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015","Unidades Restantes": 20}
+      {"Codigo": 13,"Descripcion": "Conector Collar ORO","Unidades": 20,"Precio": "2,9200","Costo": "0,1460"},
+      {"Codigo": 14,"Descripcion": "Conector Collar PLATA","Unidades": 20,"Precio": "2,6000","Costo": "0,1300"},
+      {"Codigo": 15,"Descripcion": "Conector Resina ORO","Unidades": 40,"Precio": "1,3900","Costo": "0,0348"},
+      {"Codigo": 16,"Descripcion": "Conector Resina PLATA","Unidades": 40,"Precio": "1,3900","Costo": "0,0348"},
+      {"Codigo": 114,"Descripcion": "Conector Doble Oro *15cm","Unidades": 20,"Precio": "2,0300","Costo": "0,1015"},
+      {"Codigo": 115,"Descripcion": "Mosquetón Plata","Unidades": 50,"Precio": "0,8000","Costo": "0,0400"},
+      {"Codigo": 116,"Descripcion": "Cierre Magnético","Unidades": 30,"Precio": "1,5000","Costo": "0,0750"}
     ];
 
     const extras = {
       gift: { name: "Estuche para regalo", price: 5 },
       wrap: { name: "Envoltorio para regalo", price: 3 },
-      urgent: { name: "Fabricación urgente", price: 10 }
+      urgent: { name: "Fabricación urgente", price: 10 },
+      tarjeta: { name: "Tarjeta con dedicatoria", price: 2 }
     };
 
     // Elementos del DOM
@@ -603,6 +636,17 @@
     const customMessage = document.getElementById("customMessage");
     const totalAmount = document.getElementById("totalAmount");
     const confirmPayment = document.getElementById("confirmPayment");
+
+    const toast = document.getElementById("toast");
+
+    // Mostrar toast
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
 
     // Generar código de descuento
     function generarCodigoDescuento() {
@@ -631,13 +675,13 @@
 
     function copyCode() {
       navigator.clipboard.writeText(userDiscountCode).then(() => {
-        alert("✅ Código copiado al portapapeles!");
+        showToast("✅ Código copiado al portapapeles!");
       });
     }
 
     function useCode() {
       document.getElementById("discount").value = userDiscountCode;
-      alert(`✅ Código "${userDiscountCode}" aplicado.`);
+      showToast(`✅ Código "${userDiscountCode}" aplicado.`);
       closeModal();
     }
 
@@ -675,6 +719,12 @@
         userDisplayName = null;
         userDiscountCode = null;
         authButton.textContent = "Iniciar sesión";
+        // Mensaje de despedida
+        if (user === null && userDisplayName) {
+          alert(`👋 ¡Hasta pronto, ${userDisplayName}!\nGracias por visitar Enlluernand 💛`);
+        }
+        // Reset total
+        resetConfigurator();
       }
       renderSummary();
     });
@@ -738,9 +788,23 @@
       materiales.forEach(item => {
         const option = document.createElement("option");
         option.value = item.Codigo;
-        option.textContent = item.Descripcion;
+        option.textContent = `${item.Descripcion} (€${item.Precio.replace(",", ".")})`;
         select.appendChild(option);
       });
+    }
+
+    // Resetear configurador y vista previa
+    function resetConfigurator() {
+      document.getElementById("product").value = "";
+      document.getElementById("materials-list").innerHTML = "";
+      document.getElementById("colors-list").innerHTML = "";
+      document.getElementById("conectores-list").innerHTML = "";
+      document.getElementById("colgantes-list").innerHTML = "";
+      document.getElementById("extras-list").innerHTML = "";
+      document.getElementById("discount").value = "";
+      document.getElementById("quantity").value = 1;
+      selectedColors = [];
+      renderSummary();
     }
 
     // Añadir eventos al cargar
@@ -862,6 +926,8 @@
         cart.push(item);
         renderCart();
         renderSummary();
+        showToast("✅ Artículo añadido a la cesta");
+        resetConfigurator(); // Reiniciar configurador y vista previa
       });
 
       // Abrir cesta
@@ -1102,8 +1168,11 @@
         emailjs.send("service_gmail", "template_pedido", customerEmail),
         emailjs.send("service_gmail", "template_pedido", ownerEmail)
       ])
-      .then(() => console.log("✅ Correos enviados"))
-      .catch(err => console.error("❌ Error:", err));
+      .then(() => console.log("✅ Correos enviados correctamente"))
+      .catch(err => {
+        console.error("❌ Error al enviar correos:", err);
+        alert("No se pudieron enviar los correos. Contacta al administrador.");
+      });
     }
   </script>
 </body>
