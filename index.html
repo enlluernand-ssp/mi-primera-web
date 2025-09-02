@@ -1,1 +1,1061 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Enlluernand — Configurador & Catálogo</title>
+
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #e6f3ff; }
+    header {
+      background: #0077cc;
+      color: white;
+      padding: 15px 20px;
+      position: relative;
+      text-align: left;
+    }
+    header h1 { margin: 0; font-size: 28px; text-align: center; }
+    header p { margin: 5px 0 0; font-size: 16px; text-align: center; }
+
+    .header-buttons {
+      display: flex;
+      gap: 15px;
+      position: absolute;
+      top: 15px;
+      right: 20px;
+    }
+
+    .auth-btn, .cart-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .auth-btn { background: white; color: #0077cc; border: none; }
+    .auth-btn:hover { background: #eef; }
+    .cart-btn { background: #0077cc; color: white; border: none; }
+    .cart-btn:hover { background: #005fa3; }
+
+    /* Overlay: Datos obligatorios */
+    .blocked-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .blocked-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      color: #333;
+    }
+
+    .blocked-content h2 {
+      color: #0077cc;
+    }
+
+    .blocked-content label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .blocked-content input, .blocked-content select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .blocked-content button {
+      background: #0077cc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    /* Diseño de 3 columnas */
+    .main-container {
+      display: flex;
+      gap: 20px;
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    #preview-section, #configurador, #catalogo {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    section {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+
+    h2 {
+      border-bottom: 2px solid #0077cc;
+      padding-bottom: 5px;
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 4px;
+      font-weight: bold;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #0077cc;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px 5px 0 0;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .summary {
+      background: #eef7ff;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    .item-list {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .item-row button {
+      background: #ff6666;
+      color: white;
+      border: none;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .color-options {
+      display: flex;
+      gap: 10px;
+      margin: 8px 0 12px;
+    }
+
+    .color-ball {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
+
+    /* Vista previa */
+    .preview {
+      background: #f9f9f9;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-size: 16px;
+      min-height: 400px;
+      padding: 15px;
+      text-align: center;
+      flex: 1;
+    }
+
+    .preview-title {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #0077cc;
+      margin: 0 0 10px;
+    }
+
+    .preview-line {
+      font-size: 0.95em;
+      color: #555;
+      margin: 3px 0;
+    }
+
+    .preview-colors {
+      display: flex;
+      gap: 6px;
+      margin: 8px 0;
+      justify-content: center;
+    }
+
+    /* Catálogo */
+    #catalogo h3 {
+      margin: 15px 0 5px;
+      font-size: 16px;
+    }
+
+    #catalogo img {
+      width: 100%;
+      max-width: 200px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    /* Sidebar de la cesta */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 350px;
+      height: 100%;
+      background: #fff;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+      transition: right 0.3s ease;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+    }
+
+    .sidebar.open {
+      right: 0;
+    }
+
+    .cesta-item {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+
+    .close-btn {
+      background: #ccc;
+      color: black;
+      align-self: flex-end;
+      margin-bottom: 10px;
+    }
+
+    /* Modal de Bizum */
+    .modal-bizum {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .modal-content h2 {
+      color: #0077cc;
+    }
+
+    .modal-content p {
+      font-size: 1.1em;
+      margin: 10px 0;
+    }
+
+    .modal-content .bizum-number {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #0077cc;
+      margin: 10px 0;
+    }
+
+    .modal-content button {
+      margin-top: 15px;
+    }
+
+    /* Toast: Mensaje emergente */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0077cc;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Enlluernand</h1>
+    <p>Crea tu accesorio o descubre nuestras creaciones</p>
+    <div class="header-buttons">
+      <button class="auth-btn" id="authButton">Iniciar sesión</button>
+      <button class="cart-btn" id="openCart">🛒 Cesta (0)</button>
+    </div>
+  </header>
+
+  <!-- Toast: Mensaje emergente -->
+  <div id="toast" class="toast">Artículo añadido a la cesta</div>
+
+  <!-- Modal de Bienvenida -->
+  <div id="welcomeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:12px; max-width:400px; text-align:center;">
+      <h2 id="welcomeTitle">🎉 ¡Hola!</h2>
+      <p id="welcomeMessage">Tu código de descuento es:</p>
+      <div id="discountCode" style="font-size:1.5em; font-weight:bold; color:#0077cc; margin:10px 0;"></div>
+      <p style="font-size:0.9em; color:#666;">5% de descuento válido por 24 horas</p>
+      <button onclick="copyCode()" style="background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Copiar código</button>
+      <button onclick="useCode()" style="margin-top:10px; background:#0077cc; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Usar código</button>
+      <button onclick="closeModal()" style="margin-top:10px; background:#ccc; color:black; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Overlay: Datos obligatorios tras registro -->
+  <div class="blocked-overlay" id="dataOverlay">
+    <div class="blocked-content">
+      <h2>📦 Completa tus datos de envío</h2>
+      <p>Para continuar, por favor completa tu información de contacto y envío.</p>
+
+      <label>Nombre completo *</label>
+      <input type="text" id="userDataName">
+
+      <label>Teléfono *</label>
+      <input type="text" id="userDataPhone">
+
+      <label>Dirección completa *</label>
+      <input type="text" id="userDataAddress">
+
+      <label>Código postal *</label>
+      <input type="text" id="userDataPostal">
+
+      <label>Población *</label>
+      <input type="text" id="userDataCity">
+
+      <label>Provincia *</label>
+      <input type="text" id="userDataProvince">
+
+      <label>País *</label>
+      <select id="userDataCountry">
+        <option value="Andorra">Andorra</option>
+        <option value="España">España</option>
+        <option value="Francia">Francia</option>
+      </select>
+
+      <button id="saveUserData">Guardar y continuar</button>
+    </div>
+  </div>
+
+  <!-- Modal de Bizum -->
+  <div class="modal-bizum" id="bizumModal">
+    <div class="modal-content">
+      <h2>💳 Pago por Bizum</h2>
+      <p><strong id="customMessage">Nombre, haz el pago a través de Bizum al +376 676 996</strong></p>
+      <p><strong id="totalAmount">Total: €0</strong></p>
+      <button id="confirmPayment">He realizado el pago</button>
+    </div>
+  </div>
+
+  <!-- Contenedor principal: 3 columnas -->
+  <div class="main-container">
+    
+    <!-- 1/3: Vista previa -->
+    <section id="preview-section">
+      <h2>Vista Previa</h2>
+      <div class="preview" id="preview">
+        <div class="preview-title">Ningún producto</div>
+        <div class="preview-line">Selecciona collar, pulsera o pendientes</div>
+      </div>
+    </section>
+
+    <!-- 2/3: Configurador -->
+    <section id="configurador">
+      <h2>Configurador de accesorios</h2>
+      <div class="controls">
+        <!-- Producto (único) -->
+        <label>Producto</label>
+        <select id="product">
+          <option value="">Selecciona un producto...</option>
+          <option value="collar">Collar</option>
+          <option value="pulsera">Pulsera</option>
+          <option value="pendientes">Pendientes</option>
+        </select>
+
+        <!-- Múltiples materiales -->
+        <div>
+          <label>Material</label>
+          <select id="add-material-select">
+            <option value="">Seleccionar material...</option>
+            <option value="oro">Cadena de oro</option>
+            <option value="plata">Cadena de plata</option>
+            <option value="cordon">Cordón de colores</option>
+          </select>
+          <button type="button" id="add-material-btn">+ Añadir material</button>
+          <div class="item-list" id="materials-list"></div>
+        </div>
+
+        <!-- Múltiples colores -->
+        <div>
+          <label>Color</label>
+          <div class="color-options" id="color-options-add">
+            <div class="color-ball" style="background:red" data-color="rojo"></div>
+            <div class="color-ball" style="background:blue" data-color="azul"></div>
+            <div class="color-ball" style="background:green" data-color="verde"></div>
+            <div class="color-ball" style="background:yellow" data-color="amarillo"></div>
+            <div class="color-ball" style="background:pink" data-color="rosa"></div>
+            <div class="color-ball" style="background:purple" data-color="morado"></div>
+            <div class="color-ball" style="background:brown" data-color="marrón"></div>
+            <div class="color-ball" style="background:black" data-color="negro"></div>
+            <div class="color-ball" style="background:white; border:1px solid #ccc" data-color="blanco"></div>
+            <div class="color-ball" style="background:orange" data-color="naranja"></div>
+          </div>
+          <div class="item-list" id="colors-list"></div>
+        </div>
+
+        <!-- Conectores múltiples -->
+        <div>
+          <label>Conectores adicionales</label>
+          <div class="item-list" id="conectores-list"></div>
+          <select id="add-conector-select"></select>
+          <button type="button" id="add-conector-btn">+ Añadir conector</button>
+        </div>
+
+        <!-- Múltiples colgantes -->
+        <div>
+          <label>Colgante</label>
+          <select id="add-colgante-select">
+            <option value="">Seleccionar colgante...</option>
+            <option value="corazon">Corazón</option>
+            <option value="estrella">Estrella</option>
+            <option value="nube">Nube</option>
+            <option value="flor">Flor</option>
+            <option value="inicial">Letra inicial</option>
+            <option value="mano">Mano de Fátima</option>
+            <option value="dije">Dije personalizado</option>
+            <option value="cruz">Cruz</option>
+            <option value="luna">Luna creciente</option>
+          </select>
+          <button type="button" id="add-colgante-btn">+ Añadir colgante</button>
+          <div class="item-list" id="colgantes-list"></div>
+        </div>
+
+        <!-- Extras múltiples -->
+        <div>
+          <label>Extras</label>
+          <div class="item-list" id="extras-list"></div>
+          <select id="add-extra-select">
+            <option value="">Seleccionar extra...</option>
+            <option value="gift">Estuche para regalo (+€5)</option>
+            <option value="wrap">Envoltorio para regalo (+€3)</option>
+            <option value="urgent">Fabricación urgente (+€10)</option>
+            <option value="tarjeta">Tarjeta con dedicatoria (+€2)</option>
+            <option value="bolsa">Bolsa de tela personalizada (+€4)</option>
+          </select>
+          <button type="button" id="add-extra-btn">+ Añadir extra</button>
+        </div>
+
+        <label>Código de descuento</label>
+        <input type="text" id="discount" placeholder="Introduce tu código">
+
+        <label>Cantidad</label>
+        <input type="number" id="quantity" value="1" min="1">
+
+        <div class="summary" id="summary">Precio: €0</div>
+
+        <button id="addToCart">Añadir a la cesta</button>
+        <button id="payNow">Pagar ahora</button>
+      </div>
+    </section>
+
+    <!-- 3/3: Catálogo -->
+    <section id="catalogo">
+      <h2>Catálogo</h2>
+      <h3>Collares</h3>
+      <img src="https://via.placeholder.com/200?text=Collar+1">
+      <h3>Pendientes</h3>
+      <img src="https://via.placeholder.com/200?text=Pendiente+1">
+      <h3>Pulseras</h3>
+      <img src="https://via.placeholder.com/200?text=Pulsera+1">
+    </section>
+
+  </div>
+
+  <!-- Sidebar de la Cesta -->
+  <div class="sidebar" id="cartSidebar">
+    <button class="close-btn" id="closeCart">Cerrar ✖</button>
+    <h2>Tu Cesta</h2>
+    <div id="cartItems"></div>
+    <div class="summary" id="cartSummary">Total: €0</div>
+    <button id="proceedToPayment">Proceder al pago</button>
+  </div>
+
+  <script>
+    // Inicializar EmailJS
+    (function() {
+      emailjs.init("QySTAkWHd-G0OkzSS"); // ← Asegúrate de que este ID es correcto
+    })();
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZbhHY9mEr3bBMVZLGxZE4NkGMLSPTcL4",
+      authDomain: "enlluernand-77eb5.firebaseapp.com",
+      projectId: "enlluernand-77eb5",
+      storageBucket: "enlluernand-77eb5.firebasestorage.app",
+      messagingSenderId: "904366283683",
+      appId: "1:904366283683:web:816bf521d4b858a4a25816"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Variables globales
+    let userData = null;
+    let userDisplayName = null;
+    let userDiscountCode = null;
+    let cart = [];
+    let selectedColors = [];
+
+    // Datos del Excel (actualizados)
+    const materiales = [
+      { Codigo: 13, Descripcion: "Conector Collar ORO", Precio: "2,9200" },
+      { Codigo: 14, Descripcion: "Conector Collar PLATA", Precio: "2,6000" },
+      { Codigo: 15, Descripcion: "Conector Resina ORO", Precio: "1,3900" },
+      { Codigo: 16, Descripcion: "Conector Resina PLATA", Precio: "1,3900" },
+      { Codigo: 114, Descripcion: "Conector Doble Oro *15cm", Precio: "2,0300" },
+      { Codigo: 115, Descripcion: "Mosquetón Plata", Precio: "0,8000" },
+      { Codigo: 116, Descripcion: "Cierre Magnético", Precio: "1,5000" },
+      { Codigo: 117, Descripcion: "Arandela Plata", Precio: "0,1500" },
+      { Codigo: 118, Descripcion: "Extensor de cadena", Precio: "1,2000" }
+    ];
+
+    const extras = {
+      gift: { name: "Estuche para regalo", price: 5 },
+      wrap: { name: "Envoltorio para regalo", price: 3 },
+      urgent: { name: "Fabricación urgente", price: 10 },
+      tarjeta: { name: "Tarjeta con dedicatoria", price: 2 },
+      bolsa: { name: "Bolsa de tela personalizada", price: 4 }
+    };
+
+    // Elementos del DOM
+    const dataOverlay = document.getElementById("dataOverlay");
+    const userDataName = document.getElementById("userDataName");
+    const userDataPhone = document.getElementById("userDataPhone");
+    const userDataAddress = document.getElementById("userDataAddress");
+    const userDataPostal = document.getElementById("userDataPostal");
+    const userDataCity = document.getElementById("userDataCity");
+    const userDataProvince = document.getElementById("userDataProvince");
+    const userDataCountry = document.getElementById("userDataCountry");
+    const saveUserData = document.getElementById("saveUserData");
+
+    const authButton = document.getElementById("authButton");
+    const preview = document.getElementById("preview");
+    const summary = document.getElementById("summary");
+    const cartItems = document.getElementById("cartItems");
+    const cartSummary = document.getElementById("cartSummary");
+    const cartBtn = document.getElementById("openCart");
+
+    const bizumModal = document.getElementById("bizumModal");
+    const customMessage = document.getElementById("customMessage");
+    const totalAmount = document.getElementById("totalAmount");
+    const confirmPayment = document.getElementById("confirmPayment");
+
+    const toast = document.getElementById("toast");
+
+    // Mostrar toast
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    // Generar código de descuento
+    function generarCodigoDescuento() {
+      const prefijos = ["BIENVENIDA", "LUZ", "AMOR", "ESTRELLA"];
+      const prefijo = prefijos[Math.floor(Math.random() * prefijos.length)];
+      const numero = Math.floor(Math.random() * 20 + 5);
+      return prefijo + numero + Math.random().toString(36).substr(2, 4).toUpperCase();
+    }
+
+    // Mostrar modal de bienvenida
+    function mostrarBienvenida(nombre) {
+      userDiscountCode = generarCodigoDescuento();
+      document.getElementById("discountCode").textContent = userDiscountCode;
+      document.getElementById("welcomeTitle").textContent = `🎉 ¡Hola, ${nombre}!`;
+      document.getElementById("welcomeModal").style.display = "block";
+    }
+
+    // Funciones del modal
+    function closeModal() {
+      document.getElementById("welcomeModal").style.display = "none";
+    }
+
+    function copyCode() {
+      navigator.clipboard.writeText(userDiscountCode).then(() => {
+        showToast("✅ Código copiado");
+      });
+    }
+
+    function useCode() {
+      document.getElementById("discount").value = userDiscountCode;
+      showToast(`✅ Código "${userDiscountCode}" aplicado`);
+      closeModal();
+    }
+
+    // Escuchar autenticación
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userRef = db.collection("usuarios").doc(user.uid);
+        const doc = await userRef.get();
+
+        if (!doc.exists) {
+          // Nuevo usuario
+          userDisplayName = user.displayName || user.email.split("@")[0];
+          mostrarBienvenida(userDisplayName);
+
+          await userRef.set({
+            email: user.email,
+            nombre: userDisplayName,
+            fechaRegistro: new Date(),
+            codigoDescuento: userDiscountCode,
+            usado: false,
+            expira: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+          });
+        } else {
+          const data = doc.data();
+          userDisplayName = data.nombre;
+          userDiscountCode = data.codigoDescuento;
+          if (new Date() > new Date(data.expira) || data.usado) {
+            userDiscountCode = null;
+          }
+        }
+        authButton.textContent = "Cerrar sesión";
+
+        // Verificar datos de envío
+        const userDoc = await userRef.get();
+        if (userDoc.exists && userDoc.data().direccion) {
+          userData = userDoc.data().direccion;
+        } else {
+          setTimeout(() => {
+            dataOverlay.style.display = "flex";
+          }, 500); // Pequeño retraso para asegurar renderizado
+        }
+      } else {
+        // Cierre de sesión
+        if (userDisplayName) {
+          alert(`👋 ¡Hasta pronto, ${userDisplayName}!\nGracias por visitar Enlluernand 💛`);
+        }
+        resetAll();
+      }
+      renderSummary();
+    });
+
+    // Manejar autenticación
+    authButton.addEventListener("click", () => {
+      const user = auth.currentUser;
+      if (user) {
+        auth.signOut();
+      } else {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => alert("Error: " + err.message));
+      }
+    });
+
+    // Guardar datos del cliente
+    saveUserData.addEventListener("click", () => {
+      const name = userDataName.value.trim();
+      const phone = userDataPhone.value.trim();
+      const address = userDataAddress.value.trim();
+      const postal = userDataPostal.value.trim();
+      const city = userDataCity.value.trim();
+      const province = userDataProvince.value.trim();
+      const country = userDataCountry.value.trim();
+
+      if (!name || !phone || !address || !postal || !city || !province || !country) {
+        alert("⚠️ Completa todos los campos.");
+        return;
+      }
+
+      userData = { name, phone, address, postal, city, province, country };
+      dataOverlay.style.display = "none";
+
+      if (auth.currentUser) {
+        db.collection("usuarios").doc(auth.currentUser.uid).set({
+          direccion: userData,
+          nombre: name,
+          telefono: phone,
+          email: auth.currentUser.email,
+          fecha: new Date()
+        }, { merge: true });
+      }
+    });
+
+    // Llenar conectores
+    function llenarConectores() {
+      const select = document.getElementById("add-conector-select");
+      select.innerHTML = '<option value="">Seleccionar conector...</option>';
+      materiales.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.Codigo;
+        option.textContent = `${item.Descripcion} (€${item.Precio.replace(",", ".")})`;
+        select.appendChild(option);
+      });
+    }
+
+    // Resetear todo
+    function resetAll() {
+      resetConfigurator();
+      cart = [];
+      renderCart();
+    }
+
+    function resetConfigurator() {
+      document.getElementById("product").value = "";
+      document.getElementById("materials-list").innerHTML = "";
+      document.getElementById("colors-list").innerHTML = "";
+      document.getElementById("conectores-list").innerHTML = "";
+      document.getElementById("colgantes-list").innerHTML = "";
+      document.getElementById("extras-list").innerHTML = "";
+      document.getElementById("discount").value = "";
+      document.getElementById("quantity").value = 1;
+      selectedColors = [];
+      renderSummary();
+    }
+
+    // Inicializar
+    window.onload = function () {
+      llenarConectores();
+
+      // Eventos de botones
+      document.getElementById("add-material-btn").addEventListener("click", () => {
+        const select = document.getElementById("add-material-select");
+        const val = select.value;
+        if (!val) return;
+        const list = document.getElementById("materials-list");
+        const row = document.createElement("div");
+        row.className = "item-row";
+        row.dataset.value = val;
+        row.innerHTML = `<span class="name">${select.options[select.selectedIndex].text}</span><button class="remove">✖</button>`;
+        list.appendChild(row);
+        select.value = "";
+        renderSummary();
+      });
+
+      document.getElementById("color-options-add").addEventListener("click", (e) => {
+        if (e.target.classList.contains("color-ball")) {
+          const color = e.target.dataset.color;
+          const hex = e.target.style.backgroundColor;
+          if (!selectedColors.includes(color)) {
+            selectedColors.push(color);
+            const list = document.getElementById("colors-list");
+            const row = document.createElement("div");
+            row.className = "item-row";
+            row.dataset.color = color;
+            row.innerHTML = `<span class="name">${color.charAt(0).toUpperCase() + color.slice(1)} <span style="color:${hex}">■</span></span><button class="remove">✖</button>`;
+            list.appendChild(row);
+            renderSummary();
+          }
+        }
+      });
+
+      document.getElementById("add-conector-btn").addEventListener("click", () => {
+        const select = document.getElementById("add-conector-select");
+        const cod = select.value;
+        if (!cod) return;
+        const mat = materiales.find(m => m.Codigo == cod);
+        const list = document.getElementById("conectores-list");
+        const row = document.createElement("div");
+        row.className = "item-row";
+        row.dataset.codigo = cod;
+        row.innerHTML = `<span class="name">${mat.Descripcion}</span><input type="number" value="1" min="1" class="cantidad"><button class="remove">✖</button>`;
+        list.appendChild(row);
+        select.value = "";
+        renderSummary();
+      });
+
+      document.getElementById("add-colgante-btn").addEventListener("click", () => {
+        const select = document.getElementById("add-colgante-select");
+        const val = select.value;
+        if (!val) return;
+        const list = document.getElementById("colgantes-list");
+        const row = document.createElement("div");
+        row.className = "item-row";
+        row.dataset.value = val;
+        row.innerHTML = `<span class="name">${select.options[select.selectedIndex].text}</span><button class="remove">✖</button>`;
+        list.appendChild(row);
+        select.value = "";
+        renderSummary();
+      });
+
+      document.getElementById("add-extra-btn").addEventListener("click", () => {
+        const select = document.getElementById("add-extra-select");
+        const key = select.value;
+        if (!key) return;
+        const extra = extras[key];
+        const list = document.getElementById("extras-list");
+        const row = document.createElement("div");
+        row.className = "item-row";
+        row.dataset.key = key;
+        row.innerHTML = `<span class="name">${extra.name}</span><input type="number" value="1" min="1" class="cantidad"><button class="remove">✖</button>`;
+        list.appendChild(row);
+        select.value = "";
+        renderSummary();
+      });
+
+      // Eliminar elementos
+      document.querySelectorAll(".item-list").forEach(list => {
+        list.addEventListener("click", (e) => {
+          if (e.target.classList.contains("remove")) {
+            const row = e.target.closest(".item-row");
+            if (row.parentElement.id === "colors-list") {
+              selectedColors = selectedColors.filter(c => c !== row.dataset.color);
+            }
+            row.remove();
+            renderSummary();
+          }
+        });
+      });
+
+      // Añadir a la cesta
+      document.getElementById("addToCart").addEventListener("click", () => {
+        const product = document.getElementById("product").value;
+        if (!product) return alert("⚠️ Selecciona un producto");
+        const price = calculatePrice();
+        cart.push({ ...getConfig(), price, productName: product.charAt(0).toUpperCase() + product.slice(1) });
+        renderCart();
+        showToast("✅ Artículo añadido a la cesta");
+        resetConfigurator();
+      });
+
+      // Abrir/cerrar cesta
+      document.getElementById("openCart").addEventListener("click", () => {
+        document.getElementById("cartSidebar").classList.add("open");
+      });
+      document.getElementById("closeCart").addEventListener("click", () => {
+        document.getElementById("cartSidebar").classList.remove("open");
+      });
+
+      // Pagar ahora
+      document.getElementById("payNow").addEventListener("click", () => {
+        const product = document.getElementById("product").value;
+        if (!product) return alert("⚠️ Selecciona un producto");
+        if (!userData) return alert("⚠️ Completa tus datos de envío"), dataOverlay.style.display = "flex";
+        const price = calculatePrice();
+        showBizumModal({ items: [{ ...getConfig(), price }], total: price, type: "individual" });
+      });
+
+      // Proceder al pago
+      document.getElementById("proceedToPayment").addEventListener("click", () => {
+        if (cart.length === 0) return alert("Tu cesta está vacía");
+        if (!userData) return alert("⚠️ Completa tus datos de envío"), dataOverlay.style.display = "flex";
+        const total = cart.reduce((a, b) => a + b.price, 0);
+        showBizumModal({ items: cart, total, type: "cesta" });
+      });
+
+      renderSummary();
+    };
+
+    // Configuración actual
+    function getConfig() {
+      return {
+        product: document.getElementById("product").value,
+        materials: Array.from(document.querySelectorAll("#materials-list .item-row")).map(r => r.dataset.value),
+        colors: selectedColors,
+        colgantes: Array.from(document.querySelectorAll("#colgantes-list .item-row")).map(r => r.dataset.value),
+        conectores: Array.from(document.querySelectorAll("#conectores-list .item-row")).map(r => ({
+          codigo: r.dataset.codigo,
+          cantidad: parseInt(r.querySelector(".cantidad").value) || 1
+        })),
+        extras: Array.from(document.querySelectorAll("#extras-list .item-row")).map(r => ({
+          key: r.dataset.key,
+          cantidad: parseInt(r.querySelector(".cantidad").value) || 1
+        })),
+        discount: document.getElementById("discount").value,
+        quantity: parseInt(document.getElementById("quantity").value) || 1
+      };
+    }
+
+    // Calcular precio
+    function calculatePrice() {
+      let price = 20;
+      const config = getConfig();
+
+      // Materiales
+      price += config.materials.filter(m => m === "oro").length * 30;
+      price += config.materials.filter(m => m === "plata").length * 15;
+      price += config.materials.filter(m => m === "cordon").length * 10;
+
+      // Conectores
+      config.conectores.forEach(c => {
+        const mat = materiales.find(m => m.Codigo == c.codigo);
+        if (mat) price += parseFloat(mat.Precio.replace(",", ".")) * c.cantidad;
+      });
+
+      // Extras
+      config.extras.forEach(e => {
+        if (extras[e.key]) price += extras[e.key].price * e.cantidad;
+      });
+
+      // Descuento
+      if (config.discount && config.discount === userDiscountCode) {
+        price *= 0.95; // 5%
+      }
+
+      return Math.round(price * config.quantity * 100) / 100;
+    }
+
+    // Renderizar vista previa
+    function renderSummary() {
+      const config = getConfig();
+      const price = calculatePrice();
+      summary.textContent = `Precio: €${price}`;
+
+      if (!config.product) {
+        preview.innerHTML = `<div class="preview-title">Ningún producto</div><div class="preview-line">Selecciona collar, pulsera o pendientes</div>`;
+        return;
+      }
+
+      let html = `<div class="preview-title">${config.product.charAt(0).toUpperCase() + config.product.slice(1)}</div>`;
+      if (config.materials.length) html += `<div class="preview-line">Materiales: ${config.materials.join(", ")}</div>`;
+      if (selectedColors.length) {
+        html += `<div class="preview-line">Colores:</div><div class="preview-colors">`;
+        selectedColors.forEach(c => {
+          const el = document.querySelector(`[data-color="${c}"]`);
+          html += `<div class="color-ball" style="background:${el ? el.style.backgroundColor : 'gray'}; width:18px; height:18px;"></div>`;
+        });
+        html += `</div>`;
+      }
+      if (config.colgantes.length) html += `<div class="preview-line">Colgantes: ${config.colgantes.join(", ")}</div>`;
+      if (config.conectores.length) html += `<div class="preview-line">Conectores: ${config.conectores.length}</div>`;
+      if (config.extras.length) html += `<div class="preview-line">Extras: ${config.extras.map(e => extras[e.key]?.name).join(", ")}</div>`;
+
+      preview.innerHTML = html;
+    }
+
+    // Renderizar carrito
+    function renderCart() {
+      cartItems.innerHTML = "";
+      let total = 0;
+      cart.forEach((item, i) => {
+        const div = document.createElement("div");
+        div.className = "cesta-item";
+        div.innerHTML = `<strong>${item.quantity}x ${item.productName}</strong><br>Materiales: ${item.materials.join(", ") || "Ninguno"}<br>Colores: ${item.colors.join(", ") || "Ninguno"}<br>Precio: €${item.price}<button onclick="removeFromCart(${i})">✖</button><hr>`;
+        cartItems.appendChild(div);
+        total += item.price;
+      });
+      cartSummary.textContent = `Total: €${total}`;
+      cartBtn.textContent = `🛒 Cesta (${cart.length})`;
+    }
+
+    window.removeFromCart = function(i) {
+      cart.splice(i, 1);
+      renderCart();
+    };
+
+    // Mostrar modal de Bizum
+    function showBizumModal(order) {
+      customMessage.textContent = `${userData.name}, haz el pago a través de Bizum al +376 676 996`;
+      totalAmount.textContent = `Total: €${order.total}`;
+      bizumModal.style.display = "flex";
+
+      confirmPayment.onclick = () => {
+        sendConfirmationEmails(order, userData);
+        if (order.type === "cesta") {
+          cart = [];
+          renderCart();
+          document.getElementById("cartSidebar").classList.remove("open");
+        }
+        bizumModal.style.display = "none";
+        alert(`✅ Gracias por tu compra, ${userData.name}!\nPronto recibirás la factura por email.`);
+      };
+    }
+
+    // Enviar correos
+    function sendConfirmationEmails(order, data) {
+      const itemsList = order.items.map(i => `${i.quantity}x ${i.productName} - €${i.price}`).join("<br>");
+
+      const customerEmail = {
+        to_email: auth.currentUser.email,
+        from_name: "Enlluernand",
+        subject: "✅ Tu pedido está confirmado",
+        message: `<h2>¡Hola ${data.name}!</h2><p>Gracias por tu compra.</p><div>${itemsList}</div><p>Total: €${order.total}</p><p>Pago por Bizum al +376 676 996</p>`
+      };
+
+      const ownerEmail = {
+        to_email: "tuemail@enlluernand.com",
+        from_name: "Enlluernand",
+        subject: "📦 Nuevo pedido",
+        message: `<h2>Nuevo pedido de ${data.name}</h2><p>Email: ${auth.currentUser.email}</p><div>${itemsList}</div><p>Total: €${order.total}</p><p>Enviar a: ${data.address}, ${data.postal} ${data.city}, ${data.province}, ${data.country}</p>`
+      };
+
+      Promise.all([
+        emailjs.send("service_gmail", "template_pedido", customerEmail),
+        emailjs.send("service_gmail", "template_pedido", ownerEmail)
+      ]).then(() => {
+        console.log("✅ Correos enviados");
+      }).catch(err => {
+        console.error("❌ Error:", err);
+        alert("No se pudieron enviar los correos. Contacta al administrador.");
+      });
+    }
+  </script>
+</body>
+</html>
 
