@@ -1,0 +1,48 @@
+Codigo;Descripcion;Unidades;Precio;Costo
+12;Cadena *1mm PLATA;200;1,8300;0,0092
+13;Cadena *1mm ORO Rosa;200;2,1400;0,0107
+14;Cadena *1mm ORO;200;1,7200;0,0086
+17;Conector Collar ORO;20;2,9200;0,1460
+18;Conector Collar PLATA;20;2,6000;0,1300
+19;Conector Resina ORO;40;1,3900;0,0348
+20;Conector Resina PLATA;40;1,3900;0,0348
+21;Conector Resina Trebol ORO;20;1,9300;0,0965
+127;Conector Doble Oro *15cm;20;2,0300;0,1015
+128;Conector Doble Plata *15cm;20;2,0300;0,1015
+133;Conector Doble Brillante Oro;10;0,7667;0,0767
+134;Conector Doble Brillante Plata;10;0,7667;0,0767
+137;Conectar Cuadruple Oro;2;0,5111;0,2556
+138;Conector Cuadruple Plata;2;0,5111;0,2556
+139;Conector Quintuple Plata;4;0,6389;0,1597
+82;Colgante Corazon Oro;1;0,1595;0,1595
+83;Colgante Corazon Plata;1;0,1595;0,1595
+86;Colgante Luna Cobre;1;0,1595;0,1595
+87;Colgante Luna Oro;1;0,1595;0,1595
+102;Nube Oro ;20;1,9300;0,0965
+106;Flamenco Oro;2;0,2080;0,1040
+111;Estrella Fugaz Oro;1;0,1040;0,1040
+116;Estrellita Oro;3;0,3120;0,1040
+117;Estrelita Plata;4;0,4160;0,1040
+119;Paloma Oro;2;0,2080;0,1040
+120;Paloma Oro Rosa;1;0,1040;0,1040
+140;Colgante Brillante Oro;5;0,6389;0,1278
+141;Colgante Brillante Plata;5;0,6389;0,1278
+142;Colgante Flor Blanca;2;0,6389;0,3195
+143;Colgante Flor Rosa;2;0,6389;0,3195
+144;Colgante Flor Azul;2;0,6389;0,3195
+145;Colgante Hojas Oro;5;1,7981;0,3596
+146;Colgante Hojas Plata;5;1,7981;0,3596
+15;Pegatinas;200;1,4100;0,0071
+16;Pegatinas Letras y Numeros;;;
+11;Papel Origami 7*7;100;0,8000;0,0080
+44;Cuenta Piedra luna *4mm;91;1,6300;0,0179
+45;Cuenta Piedra luna *6mm;61;1,5600;0,0256
+46;Cuenta Isywaka Blanca 4*6mm;50;0,6100;0,0122
+47;Cuenta Isywaka Negra 4*6mm;50;0,6100;0,0122
+48;Cuenta Multicolor *6mm;1000;0,8300;0,0008
+49;Cuenta Multicolor *4mm;2500;0,6300;0,0003
+50;Cuenta de encaje negro *6mm;63;2,4400;0,0387
+51;Cuenta de encaje negro *4mm;95;2,0300;0,0214
+52;Cuenta Green Malachite *4mm;50;1,1600;0,0232
+53;Cuenta Tiger Eye *4mm;50;1,6500;0,0330
+54;Cuenta Red Vein Stone *4mm;50;1,2200;0,0244
