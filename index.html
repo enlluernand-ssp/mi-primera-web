@@ -399,7 +399,7 @@
         <option value="Francia">Francia</option>
       </select>
 
-      <button id="saveUserData">Guardar y continuar</button>
+      <button id="saveUserData" type="button">Guardar y continuar</button>
     </div>
   </div>
 
@@ -685,7 +685,7 @@
             userDiscountCode = null;
           }
         }
-        authButton.textContent = "Cerrar sesión"; // ✅ Botón cambia dinámicamente
+        authButton.textContent = "Cerrar sesión";
 
         // Verificar datos de envío
         const userDoc = await userRef.get();
@@ -694,6 +694,10 @@
         } else {
           setTimeout(() => {
             dataOverlay.style.display = "flex";
+            // Añadir evento solo cuando el overlay esté visible
+            if (saveUserData) {
+              saveUserData.addEventListener("click", handleSaveUserData);
+            }
           }, 500);
         }
       } else {
@@ -701,7 +705,7 @@
           alert(`👋 ¡Hasta pronto, ${userDisplayName}!\nGracias por visitar Enlluernand 💛`);
         }
         resetAll();
-        authButton.textContent = "Iniciar sesión"; // ✅ Vuelve a "Iniciar"
+        authButton.textContent = "Iniciar sesión";
       }
       renderSummary();
     });
@@ -724,7 +728,7 @@
     });
 
     // Guardar datos del cliente
-    saveUserData.addEventListener("click", () => {
+    function handleSaveUserData() {
       const name = userDataName.value.trim();
       const phone = userDataPhone.value.trim();
       const address = userDataAddress.value.trim();
@@ -750,7 +754,7 @@
           fecha: new Date()
         }, { merge: true });
       }
-    });
+    }
 
     // Llenar conectores
     function llenarConectores() {
