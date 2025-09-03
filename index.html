@@ -549,7 +549,7 @@
   <script>
     // Inicializar EmailJS
     (function() {
-      emailjs.init("QySTAkWHd-G0OkzSS"); // Tu user ID
+      emailjs.init("QySTAkWHd-G0OkzSS");
     })();
 
     // Configuración de Firebase
@@ -1051,8 +1051,8 @@
 
       try {
         await Promise.all([
-          emailjs.send("service_gmail", "template_pedido", customerEmail),
-          emailjs.send("service_gmail", "template_pedido", ownerEmail)
+          emailjs.send("service_tu3gqxw", "template_pedido", customerEmail), // ✅ Cambiado a ID real
+          emailjs.send("service_tu3gqxw", "template_pedido", ownerEmail)   // ✅ Cambiado a ID real
         ]);
         console.log("✅ Correos enviados correctamente");
       } catch (err) {
