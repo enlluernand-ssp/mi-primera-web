@@ -413,7 +413,7 @@
     </div>
   </div>
 
-  <!-- Contenedor principal: 3 columnas -->
+  <!-- Contenido principal: 3 columnas -->
   <div class="main-container">
     
     <!-- 1/3: Vista previa -->
@@ -549,7 +549,7 @@
   <script>
     // Inicializar EmailJS
     (function() {
-      emailjs.init("QySTAkWHd-G0OkzSS");
+      emailjs.init("QySTAkWHd-G0OkzSS"); // Tu user ID
     })();
 
     // Configuración de Firebase
@@ -694,7 +694,6 @@
         } else {
           setTimeout(() => {
             dataOverlay.style.display = "flex";
-            // Añadir evento solo cuando el overlay esté visible
             if (saveUserData) {
               saveUserData.addEventListener("click", handleSaveUserData);
             }
@@ -1033,7 +1032,7 @@
     }
 
     // Enviar correos
-    function sendConfirmationEmails(order, data) {
+    async function sendConfirmationEmails(order, data) {
       const itemsList = order.items.map(i => `${i.quantity}x ${i.productName} - €${i.price}`).join("<br>");
 
       const customerEmail = {
@@ -1050,15 +1049,16 @@
         message: `<h2>Nuevo pedido de ${data.name}</h2><p>Email: ${auth.currentUser.email}</p><div>${itemsList}</div><p>Total: €${order.total}</p><p>Enviar a: ${data.address}, ${data.postal} ${data.city}, ${data.province}, ${data.country}</p>`
       };
 
-      Promise.all([
-        emailjs.send("service_gmail", "template_pedido", customerEmail),
-        emailjs.send("service_gmail", "template_pedido", ownerEmail)
-      ]).then(() => {
-        console.log("✅ Correos enviados");
-      }).catch(err => {
-        console.error("❌ Error:", err);
-        alert("No se pudieron enviar los correos. Contacta al administrador.");
-      });
+      try {
+        await Promise.all([
+          emailjs.send("service_gmail", "template_pedido", customerEmail),
+          emailjs.send("service_gmail", "template_pedido", ownerEmail)
+        ]);
+        console.log("✅ Correos enviados correctamente");
+      } catch (err) {
+        console.error("❌ Error al enviar correos:", err);
+        alert("❌ No se pudieron enviar los correos. Contacta al administrador.");
+      }
     }
   </script>
 </body>
