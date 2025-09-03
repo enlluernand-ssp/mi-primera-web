@@ -573,26 +573,56 @@
     let cart = [];
     let selectedColors = [];
 
-    // Datos del Excel (actualizados)
-    const materiales = [
-      { Codigo: 13, Descripcion: "Conector Collar ORO", Precio: "2,9200" },
-      { Codigo: 14, Descripcion: "Conector Collar PLATA", Precio: "2,6000" },
-      { Codigo: 15, Descripcion: "Conector Resina ORO", Precio: "1,3900" },
-      { Codigo: 16, Descripcion: "Conector Resina PLATA", Precio: "1,3900" },
-      { Codigo: 114, Descripcion: "Conector Doble Oro *15cm", Precio: "2,0300" },
-      { Codigo: 115, Descripcion: "Mosquetón Plata", Precio: "0,8000" },
-      { Codigo: 116, Descripcion: "Cierre Magnético", Precio: "1,5000" },
-      { Codigo: 117, Descripcion: "Arandela Plata", Precio: "0,1500" },
-      { Codigo: 118, Descripcion: "Extensor de cadena", Precio: "1,2000" }
+    // Datos del Excel (CSV) -> convertidos a JSON
+    const productos = [
+      { codigo: 12, nombre: "Cadena *1mm PLATA", precio: 1.83 },
+      { codigo: 13, nombre: "Cadena *1mm ORO Rosa", precio: 2.14 },
+      { codigo: 14, nombre: "Cadena *1mm ORO", precio: 1.72 },
+      { codigo: 17, nombre: "Conector Collar ORO", precio: 2.92 },
+      { codigo: 18, nombre: "Conector Collar PLATA", precio: 2.60 },
+      { codigo: 19, nombre: "Conector Resina ORO", precio: 1.39 },
+      { codigo: 20, nombre: "Conector Resina PLATA", precio: 1.39 },
+      { codigo: 21, nombre: "Conector Resina Trebol ORO", precio: 1.93 },
+      { codigo: 127, nombre: "Conector Doble Oro *15cm", precio: 2.03 },
+      { codigo: 128, nombre: "Conector Doble Plata *15cm", precio: 2.03 },
+      { codigo: 133, nombre: "Conector Doble Brillante Oro", precio: 0.7667 },
+      { codigo: 134, nombre: "Conector Doble Brillante Plata", precio: 0.7667 },
+      { codigo: 137, nombre: "Conector Cuádruple Oro", precio: 0.5111 },
+      { codigo: 138, nombre: "Conector Cuádruple Plata", precio: 0.5111 },
+      { codigo: 139, nombre: "Conector Quíntuple Plata", precio: 0.6389 },
+      { codigo: 82, nombre: "Colgante Corazon Oro", precio: 0.1595 },
+      { codigo: 83, nombre: "Colgante Corazon Plata", precio: 0.1595 },
+      { codigo: 86, nombre: "Colgante Luna Cobre", precio: 0.1595 },
+      { codigo: 87, nombre: "Colgante Luna Oro", precio: 0.1595 },
+      { codigo: 102, nombre: "Nube Oro", precio: 1.93 },
+      { codigo: 106, nombre: "Flamenco Oro", precio: 0.208 },
+      { codigo: 111, nombre: "Estrella Fugaz Oro", precio: 0.104 },
+      { codigo: 116, nombre: "Estrellita Oro", precio: 0.312 },
+      { codigo: 117, nombre: "Estrelita Plata", precio: 0.416 },
+      { codigo: 119, nombre: "Paloma Oro", precio: 0.208 },
+      { codigo: 120, nombre: "Paloma Oro Rosa", precio: 0.104 },
+      { codigo: 140, nombre: "Colgante Brillante Oro", precio: 0.6389 },
+      { codigo: 141, nombre: "Colgante Brillante Plata", precio: 0.6389 },
+      { codigo: 142, nombre: "Colgante Flor Blanca", precio: 0.6389 },
+      { codigo: 143, nombre: "Colgante Flor Rosa", precio: 0.6389 },
+      { codigo: 144, nombre: "Colgante Flor Azul", precio: 0.6389 },
+      { codigo: 145, nombre: "Colgante Hojas Oro", precio: 1.7981 },
+      { codigo: 146, nombre: "Colgante Hojas Plata", precio: 1.7981 },
+      { codigo: 15, nombre: "Pegatinas", precio: 1.41 },
+      { codigo: 16, nombre: "Pegatinas Letras y Numeros", precio: 0 },
+      { codigo: 11, nombre: "Papel Origami 7*7", precio: 0.80 },
+      { codigo: 44, nombre: "Cuenta Piedra luna *4mm", precio: 1.63 },
+      { codigo: 45, nombre: "Cuenta Piedra luna *6mm", precio: 1.56 },
+      { codigo: 46, nombre: "Cuenta Isywaka Blanca 4*6mm", precio: 0.61 },
+      { codigo: 47, nombre: "Cuenta Isywaka Negra 4*6mm", precio: 0.61 },
+      { codigo: 48, nombre: "Cuenta Multicolor *6mm", precio: 0.83 },
+      { codigo: 49, nombre: "Cuenta Multicolor *4mm", precio: 0.63 },
+      { codigo: 50, nombre: "Cuenta de encaje negro *6mm", precio: 2.44 },
+      { codigo: 51, nombre: "Cuenta de encaje negro *4mm", precio: 2.03 },
+      { codigo: 52, nombre: "Cuenta Green Malachite *4mm", precio: 1.16 },
+      { codigo: 53, nombre: "Cuenta Tiger Eye *4mm", precio: 1.65 },
+      { codigo: 54, nombre: "Cuenta Red Vein Stone *4mm", precio: 1.22 }
     ];
-
-    const extras = {
-      gift: { name: "Estuche para regalo", price: 5 },
-      wrap: { name: "Envoltorio para regalo", price: 3 },
-      urgent: { name: "Fabricación urgente", price: 10 },
-      tarjeta: { name: "Tarjeta con dedicatoria", price: 2 },
-      bolsa: { name: "Bolsa de tela personalizada", price: 4 }
-    };
 
     // Elementos del DOM
     const dataOverlay = document.getElementById("dataOverlay");
@@ -759,10 +789,10 @@
     function llenarConectores() {
       const select = document.getElementById("add-conector-select");
       select.innerHTML = '<option value="">Seleccionar conector...</option>';
-      materiales.forEach(item => {
+      productos.filter(p => p.nombre.includes("Conector")).forEach(item => {
         const option = document.createElement("option");
-        option.value = item.Codigo;
-        option.textContent = `${item.Descripcion} (€${item.Precio.replace(",", ".")})`;
+        option.value = item.codigo;
+        option.textContent = `${item.nombre} (€${item.precio.toFixed(2)})`;
         select.appendChild(option);
       });
     }
@@ -827,12 +857,12 @@
         const select = document.getElementById("add-conector-select");
         const cod = select.value;
         if (!cod) return;
-        const mat = materiales.find(m => m.Codigo == cod);
+        const mat = productos.find(m => m.codigo == cod);
         const list = document.getElementById("conectores-list");
         const row = document.createElement("div");
         row.className = "item-row";
         row.dataset.codigo = cod;
-        row.innerHTML = `<span class="name">${mat.Descripcion}</span><input type="number" value="1" min="1" class="cantidad"><button class="remove">✖</button>`;
+        row.innerHTML = `<span class="name">${mat.nombre}</span><input type="number" value="1" min="1" class="cantidad"><button class="remove">✖</button>`;
         list.appendChild(row);
         select.value = "";
         renderSummary();
@@ -950,8 +980,8 @@
       price += config.materials.filter(m => m === "cordon").length * 10;
 
       config.conectores.forEach(c => {
-        const mat = materiales.find(m => m.Codigo == c.codigo);
-        if (mat) price += parseFloat(mat.Precio.replace(",", ".")) * c.cantidad;
+        const mat = productos.find(m => m.codigo == c.codigo);
+        if (mat) price += mat.precio * c.cantidad;
       });
 
       config.extras.forEach(e => {
@@ -1051,10 +1081,9 @@
 
       try {
         await Promise.all([
-          emailjs.send("service_tu3gqxw", "template_pedido", customerEmail), // ✅ Cambiado a ID real
-          emailjs.send("service_tu3gqxw", "template_pedido", ownerEmail)   // ✅ Cambiado a ID real
+          emailjs.send("service_tu3gqxw", "template_z7kk7wq", customerEmail),
+          emailjs.send("service_tu3gqxw", "template_0orquhm", ownerEmail)
         ]);
-        console.log("✅ Correos enviados correctamente");
       } catch (err) {
         console.error("❌ Error al enviar correos:", err);
         alert("❌ No se pudieron enviar los correos. Contacta al administrador.");
