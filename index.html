@@ -429,7 +429,7 @@
     <section id="configurador">
       <h2>Configurador de accesorios</h2>
       <div class="controls">
-        <!-- Producto (único) -->
+        <!-- Producto -->
         <label>Producto</label>
         <select id="product">
           <option value="">Selecciona un producto...</option>
@@ -438,7 +438,7 @@
           <option value="pendientes">Pendientes</option>
         </select>
 
-        <!-- Múltiples materiales -->
+        <!-- Materiales -->
         <div>
           <label>Material</label>
           <select id="add-material-select">
@@ -451,7 +451,7 @@
           <div class="item-list" id="materials-list"></div>
         </div>
 
-        <!-- Múltiples colores -->
+        <!-- Colores -->
         <div>
           <label>Color</label>
           <div class="color-options" id="color-options-add">
@@ -469,7 +469,7 @@
           <div class="item-list" id="colors-list"></div>
         </div>
 
-        <!-- Conectores múltiples -->
+        <!-- Conectores -->
         <div>
           <label>Conectores adicionales</label>
           <div class="item-list" id="conectores-list"></div>
@@ -477,7 +477,7 @@
           <button type="button" id="add-conector-btn">+ Añadir conector</button>
         </div>
 
-        <!-- Múltiples colgantes -->
+        <!-- Colgantes -->
         <div>
           <label>Colgante</label>
           <select id="add-colgante-select">
@@ -496,7 +496,7 @@
           <div class="item-list" id="colgantes-list"></div>
         </div>
 
-        <!-- Extras múltiples -->
+        <!-- Extras -->
         <div>
           <label>Extras</label>
           <div class="item-list" id="extras-list"></div>
@@ -528,11 +528,11 @@
     <section id="catalogo">
       <h2>Catálogo</h2>
       <h3>Collares</h3>
-      <img src="https://via.placeholder.com/200?text=Collar+1">
+      <img src="https://via.placeholder.com/200?text=Collar+1" alt="Collar">
       <h3>Pendientes</h3>
-      <img src="https://via.placeholder.com/200?text=Pendiente+1">
+      <img src="https://via.placeholder.com/200?text=Pendiente+1" alt="Pendiente">
       <h3>Pulseras</h3>
-      <img src="https://via.placeholder.com/200?text=Pulsera+1">
+      <img src="https://via.placeholder.com/200?text=Pulsera+1" alt="Pulsera">
     </section>
 
   </div>
@@ -566,18 +566,14 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Variables
-    let userData = null;
-    let userDisplayName = null;
-    let userDiscountCode = null;
-    let cart = [];
-    let selectedColors = [];
-
-    // Datos del Excel (CSV) -> convertidos a JSON
+    // Datos del Excel (todos los productos relevantes para el cliente)
     const productos = [
+      { codigo: 11, nombre: "Papel Origami 7*7", precio: 0.80 },
       { codigo: 12, nombre: "Cadena *1mm PLATA", precio: 1.83 },
       { codigo: 13, nombre: "Cadena *1mm ORO Rosa", precio: 2.14 },
       { codigo: 14, nombre: "Cadena *1mm ORO", precio: 1.72 },
+      { codigo: 15, nombre: "Pegatinas", precio: 1.41 },
+      { codigo: 16, nombre: "Pegatinas Letras y Numeros", precio: 0.00 },
       { codigo: 17, nombre: "Conector Collar ORO", precio: 2.92 },
       { codigo: 18, nombre: "Conector Collar PLATA", precio: 2.60 },
       { codigo: 19, nombre: "Conector Resina ORO", precio: 1.39 },
@@ -590,6 +586,17 @@
       { codigo: 137, nombre: "Conector Cuádruple Oro", precio: 0.5111 },
       { codigo: 138, nombre: "Conector Cuádruple Plata", precio: 0.5111 },
       { codigo: 139, nombre: "Conector Quíntuple Plata", precio: 0.6389 },
+      { codigo: 44, nombre: "Cuenta Piedra luna *4mm", precio: 1.63 },
+      { codigo: 45, nombre: "Cuenta Piedra luna *6mm", precio: 1.56 },
+      { codigo: 46, nombre: "Cuenta Isywaka Blanca 4*6mm", precio: 0.61 },
+      { codigo: 47, nombre: "Cuenta Isywaka Negra 4*6mm", precio: 0.61 },
+      { codigo: 48, nombre: "Cuenta Multicolor *6mm", precio: 0.83 },
+      { codigo: 49, nombre: "Cuenta Multicolor *4mm", precio: 0.63 },
+      { codigo: 50, nombre: "Cuenta de encaje negro *6mm", precio: 2.44 },
+      { codigo: 51, nombre: "Cuenta de encaje negro *4mm", precio: 2.03 },
+      { codigo: 52, nombre: "Cuenta Green Malachite *4mm", precio: 1.16 },
+      { codigo: 53, nombre: "Cuenta Tiger Eye *4mm", precio: 1.65 },
+      { codigo: 54, nombre: "Cuenta Red Vein Stone *4mm", precio: 1.22 },
       { codigo: 82, nombre: "Colgante Corazon Oro", precio: 0.1595 },
       { codigo: 83, nombre: "Colgante Corazon Plata", precio: 0.1595 },
       { codigo: 86, nombre: "Colgante Luna Cobre", precio: 0.1595 },
@@ -607,22 +614,23 @@
       { codigo: 143, nombre: "Colgante Flor Rosa", precio: 0.6389 },
       { codigo: 144, nombre: "Colgante Flor Azul", precio: 0.6389 },
       { codigo: 145, nombre: "Colgante Hojas Oro", precio: 1.7981 },
-      { codigo: 146, nombre: "Colgante Hojas Plata", precio: 1.7981 },
-      { codigo: 15, nombre: "Pegatinas", precio: 1.41 },
-      { codigo: 16, nombre: "Pegatinas Letras y Numeros", precio: 0 },
-      { codigo: 11, nombre: "Papel Origami 7*7", precio: 0.80 },
-      { codigo: 44, nombre: "Cuenta Piedra luna *4mm", precio: 1.63 },
-      { codigo: 45, nombre: "Cuenta Piedra luna *6mm", precio: 1.56 },
-      { codigo: 46, nombre: "Cuenta Isywaka Blanca 4*6mm", precio: 0.61 },
-      { codigo: 47, nombre: "Cuenta Isywaka Negra 4*6mm", precio: 0.61 },
-      { codigo: 48, nombre: "Cuenta Multicolor *6mm", precio: 0.83 },
-      { codigo: 49, nombre: "Cuenta Multicolor *4mm", precio: 0.63 },
-      { codigo: 50, nombre: "Cuenta de encaje negro *6mm", precio: 2.44 },
-      { codigo: 51, nombre: "Cuenta de encaje negro *4mm", precio: 2.03 },
-      { codigo: 52, nombre: "Cuenta Green Malachite *4mm", precio: 1.16 },
-      { codigo: 53, nombre: "Cuenta Tiger Eye *4mm", precio: 1.65 },
-      { codigo: 54, nombre: "Cuenta Red Vein Stone *4mm", precio: 1.22 }
+      { codigo: 146, nombre: "Colgante Hojas Plata", precio: 1.7981 }
     ];
+
+    const extras = {
+      gift: { name: "Estuche para regalo", price: 5 },
+      wrap: { name: "Envoltorio para regalo", price: 3 },
+      urgent: { name: "Fabricación urgente", price: 10 },
+      tarjeta: { name: "Tarjeta con dedicatoria", price: 2 },
+      bolsa: { name: "Bolsa de tela personalizada", price: 4 }
+    };
+
+    // Variables
+    let userData = null;
+    let userDisplayName = null;
+    let userDiscountCode = null;
+    let cart = [];
+    let selectedColors = [];
 
     // Elementos del DOM
     const dataOverlay = document.getElementById("dataOverlay");
@@ -792,7 +800,7 @@
       productos.filter(p => p.nombre.includes("Conector")).forEach(item => {
         const option = document.createElement("option");
         option.value = item.codigo;
-        option.textContent = `${item.nombre} (€${item.precio.toFixed(2)})`;
+        option.textContent = `${item.nombre}`;
         select.appendChild(option);
       });
     }
@@ -821,7 +829,7 @@
     window.onload = function () {
       llenarConectores();
 
-      // Eventos de botones (materiales, colores, etc.)
+      // Eventos de botones
       document.getElementById("add-material-btn").addEventListener("click", () => {
         const select = document.getElementById("add-material-select");
         const val = select.value;
