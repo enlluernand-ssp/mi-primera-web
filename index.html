@@ -12,6 +12,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+  <!-- Librería para generar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #e6f3ff; }
     header {
@@ -491,6 +494,46 @@
             <option value="dije">Dije personalizado</option>
             <option value="cruz">Cruz</option>
             <option value="luna">Luna creciente</option>
+            <option value="triangulo">Triángulo</option>
+            <option value="rectangulo">Rectángulo</option>
+            <option value="rombo">Rombo</option>
+            <option value="lagrima">Lágrima</option>
+            <option value="elefante">Elefante</option>
+            <option value="conejo">Conejo</option>
+            <option value="ballena">Ballena</option>
+            <option value="fantasma">Fantasma</option>
+            <option value="grulla">Grulla</option>
+            <option value="hojas">Hojas</option>
+            <option value="paloma">Paloma</option>
+            <option value="flamenco">Flamenco</option>
+            <option value="gafitas">Gafitas</option>
+            <option value="candelabro">Candelabro</option>
+            <option value="estrellita">Estrellita</option>
+            <option value="manzana">Manzana</option>
+            <option value="cabeza_redonda">Cabeza redonda</option>
+            <option value="cabeza_lagrima">Cabeza lágrima</option>
+            <option value="cabeza_arrugada">Cabeza arrugada</option>
+            <option value="aro">Aro</option>
+            <option value="cabujon">Cabujón</option>
+            <option value="hexagono">Hexágono</option>
+            <option value="cuadro">Cuadro</option>
+            <option value="triangulo_o">Triángulo Oro</option>
+            <option value="triangulo_p">Triángulo Plata</option>
+            <option value="triangulo_b">Triángulo Bronce</option>
+            <option value="rectangulo_o">Rectángulo Oro</option>
+            <option value="rectangulo_p">Rectángulo Plata</option>
+            <option value="rectangulo_b">Rectángulo Bronce</option>
+            <option value="rombo_o">Rombo Oro</option>
+            <option value="rombo_c">Rombo Cobre</option>
+            <option value="rombo_g">Rombo Grande</option>
+            <option value="lagrima_o">Lágrima Oro</option>
+            <option value="lagrima_p">Lágrima Plata</option>
+            <option value="lagrima_b">Lágrima Bronce</option>
+            <option value="candelabro_o">Candelabro Oro</option>
+            <option value="estrellita_r">Estrellita Rosa</option>
+            <option value="estrellita_l">Estrellita Lila</option>
+            <option value="estrella_polar">Estrella Polar</option>
+            <option value="estrellita_s">Estrellita Sol</option>
           </select>
           <button type="button" id="add-colgante-btn">+ Añadir colgante</button>
           <div class="item-list" id="colgantes-list"></div>
@@ -599,15 +642,49 @@
       { codigo: 54, nombre: "Cuenta Red Vein Stone *4mm", precio: 1.22 },
       { codigo: 82, nombre: "Colgante Corazon Oro", precio: 0.1595 },
       { codigo: 83, nombre: "Colgante Corazon Plata", precio: 0.1595 },
+      { codigo: 84, nombre: "Colgante Corazon Bronce", precio: 0.1595 },
+      { codigo: 85, nombre: "Colgante Aro Cobre", precio: 0.1595 },
       { codigo: 86, nombre: "Colgante Luna Cobre", precio: 0.1595 },
       { codigo: 87, nombre: "Colgante Luna Oro", precio: 0.1595 },
+      { codigo: 88, nombre: "Colgante Triangulo Oro", precio: 0.1595 },
+      { codigo: 89, nombre: "Colgante Triangulo Plata", precio: 0.1595 },
+      { codigo: 90, nombre: "Colgante Triangulo Bronce", precio: 0.1595 },
+      { codigo: 91, nombre: "Colgante Rectangulo Oro", precio: 0.1595 },
+      { codigo: 92, nombre: "Colgante Rectangulo Plata", precio: 0.1595 },
+      { codigo: 93, nombre: "Colgante Rectangulo Bronce", precio: 0.1595 },
+      { codigo: 94, nombre: "Colgante Rombo Oro *2cm", precio: 0.1595 },
+      { codigo: 95, nombre: "Colgante Rombo Cobre *2cm", precio: 0.1595 },
+      { codigo: 96, nombre: "Colgante Rombo Oro *4cm", precio: 0.1595 },
+      { codigo: 97, nombre: "Colgante Lagrima Oro", precio: 0.1595 },
+      { codigo: 98, nombre: "Colgante Lagrima Plata", precio: 0.1595 },
+      { codigo: 99, nombre: "Colgante Lagima Bronce", precio: 0.1595 },
+      { codigo: 100, nombre: "Hexagono Oro *1cm", precio: 2.08 },
+      { codigo: 101, nombre: "Hexagono Plata *1cm", precio: 2.08 },
       { codigo: 102, nombre: "Nube Oro", precio: 1.93 },
+      { codigo: 103, nombre: "Gafitas Oro", precio: 0.416 },
+      { codigo: 104, nombre: "Gafitas Plata", precio: 0.104 },
+      { codigo: 105, nombre: "Luna Plata", precio: 0.104 },
       { codigo: 106, nombre: "Flamenco Oro", precio: 0.208 },
+      { codigo: 107, nombre: "Flamenco Plata", precio: 0.104 },
+      { codigo: 108, nombre: "Flamenco Bronce", precio: 0.208 },
+      { codigo: 109, nombre: "Manzana Cobre", precio: 0.104 },
+      { codigo: 110, nombre: "Hojas Cobre", precio: 0.208 },
       { codigo: 111, nombre: "Estrella Fugaz Oro", precio: 0.104 },
+      { codigo: 112, nombre: "Ballena Oro", precio: 0.104 },
+      { codigo: 113, nombre: "Ballena Plata", precio: 0.104 },
+      { codigo: 114, nombre: "Elefante Oro", precio: 0.104 },
+      { codigo: 115, nombre: "Conejo Plata", precio: 0.104 },
       { codigo: 116, nombre: "Estrellita Oro", precio: 0.312 },
       { codigo: 117, nombre: "Estrelita Plata", precio: 0.416 },
+      { codigo: 118, nombre: "Estellita Bronce", precio: 0.104 },
       { codigo: 119, nombre: "Paloma Oro", precio: 0.208 },
       { codigo: 120, nombre: "Paloma Oro Rosa", precio: 0.104 },
+      { codigo: 121, nombre: "Colgante Candelabro Oro", precio: 3.00 },
+      { codigo: 122, nombre: "Estrellita Rosa", precio: 3.00 },
+      { codigo: 123, nombre: "Estrellita Lila", precio: 3.00 },
+      { codigo: 124, nombre: "Estrella Polar", precio: 3.00 },
+      { codigo: 125, nombre: "Fantasma", precio: 3.00 },
+      { codigo: 126, nombre: "Grulla", precio: 3.00 },
       { codigo: 140, nombre: "Colgante Brillante Oro", precio: 0.6389 },
       { codigo: 141, nombre: "Colgante Brillante Plata", precio: 0.6389 },
       { codigo: 142, nombre: "Colgante Flor Blanca", precio: 0.6389 },
