@@ -502,11 +502,11 @@
           <div class="item-list" id="extras-list"></div>
           <select id="add-extra-select">
             <option value="">Seleccionar extra...</option>
-            <option value="gift">Estuche para regalo (+€5)</option>
-            <option value="wrap">Envoltorio para regalo (+€3)</option>
-            <option value="urgent">Fabricación urgente (+€10)</option>
-            <option value="tarjeta">Tarjeta con dedicatoria (+€2)</option>
-            <option value="bolsa">Bolsa de tela personalizada (+€4)</option>
+            <option value="gift">Estuche para regalo</option>
+            <option value="wrap">Envoltorio para regalo</option>
+            <option value="urgent">Fabricación urgente</option>
+            <option value="tarjeta">Tarjeta con dedicatoria</option>
+            <option value="bolsa">Bolsa de tela personalizada</option>
           </select>
           <button type="button" id="add-extra-btn">+ Añadir extra</button>
         </div>
@@ -1062,8 +1062,8 @@
         if (order.type === "cesta") {
           cart = [];
           renderCart();
-          document.getElementById("cartSidebar").classList.remove("open");
         }
+        resetConfigurator(); // Resetear todo el configurador
         bizumModal.style.display = "none";
         alert(`✅ Gracias por tu compra, ${userData.name}!\nPronto recibirás la factura por email.`);
       };
