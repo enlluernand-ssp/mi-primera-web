@@ -413,7 +413,7 @@
     </div>
   </div>
 
-  <!-- Contenido principal: 3 columnas -->
+  <!-- Contenedor principal: 3 columnas -->
   <div class="main-container">
     
     <!-- 1/3: Vista previa -->
@@ -549,7 +549,7 @@
   <script>
     // Inicializar EmailJS
     (function() {
-      emailjs.init("QySTAkWHd-G0OkzSS"); // ← Asegúrate de que este ID es correcto
+      emailjs.init("QySTAkWHd-G0OkzSS");
     })();
 
     // Configuración de Firebase
@@ -566,7 +566,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Variables globales
+    // Variables
     let userData = null;
     let userDisplayName = null;
     let userDiscountCode = null;
@@ -666,7 +666,6 @@
         const doc = await userRef.get();
 
         if (!doc.exists) {
-          // Nuevo usuario
           userDisplayName = user.displayName || user.email.split("@")[0];
           mostrarBienvenida(userDisplayName);
 
@@ -676,7 +675,7 @@
             fechaRegistro: new Date(),
             codigoDescuento: userDiscountCode,
             usado: false,
-            expira: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+            expira: new Date(Date.now() + 24 * 60 * 60 * 1000)
           });
         } else {
           const data = doc.data();
@@ -686,7 +685,7 @@
             userDiscountCode = null;
           }
         }
-        authButton.textContent = "Cerrar sesión";
+        authButton.textContent = "Cerrar sesión"; // ✅ Botón cambia dinámicamente
 
         // Verificar datos de envío
         const userDoc = await userRef.get();
@@ -698,11 +697,11 @@
           }, 500);
         }
       } else {
-        // Cierre de sesión
         if (userDisplayName) {
           alert(`👋 ¡Hasta pronto, ${userDisplayName}!\nGracias por visitar Enlluernand 💛`);
         }
         resetAll();
+        authButton.textContent = "Iniciar sesión"; // ✅ Vuelve a "Iniciar"
       }
       renderSummary();
     });
@@ -716,7 +715,7 @@
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(err => {
           if (err.code === 'auth/popup-closed-by-user') {
-            alert("❌ La ventana de inicio de sesión fue cerrada. Por favor inténtalo de nuevo.");
+            alert("❌ La ventana de inicio de sesión fue cerrada.");
           } else {
             alert("Error: " + err.message);
           }
@@ -789,7 +788,7 @@
     window.onload = function () {
       llenarConectores();
 
-      // Eventos de botones
+      // Eventos de botones (materiales, colores, etc.)
       document.getElementById("add-material-btn").addEventListener("click", () => {
         const select = document.getElementById("add-material-select");
         const val = select.value;
@@ -943,25 +942,21 @@
       let price = 20;
       const config = getConfig();
 
-      // Materiales
       price += config.materials.filter(m => m === "oro").length * 30;
       price += config.materials.filter(m => m === "plata").length * 15;
       price += config.materials.filter(m => m === "cordon").length * 10;
 
-      // Conectores
       config.conectores.forEach(c => {
         const mat = materiales.find(m => m.Codigo == c.codigo);
         if (mat) price += parseFloat(mat.Precio.replace(",", ".")) * c.cantidad;
       });
 
-      // Extras
       config.extras.forEach(e => {
         if (extras[e.key]) price += extras[e.key].price * e.cantidad;
       });
 
-      // Descuento
       if (config.discount && config.discount === userDiscountCode) {
-        price *= 0.95; // 5%
+        price *= 0.95;
       }
 
       return Math.round(price * config.quantity * 100) / 100;
